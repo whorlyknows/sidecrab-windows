@@ -5,6 +5,10 @@
 *.pdb
 *.dSYM/
 
+# Keep agent-generated notes private; README.md is the public project overview.
+*.md
+!README.md
+
 # Local application state, credentials, and agent/session output
 .sidecrab/
 **/.sidecrab/

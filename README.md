@@ -22,7 +22,7 @@
   - **🎭 Animation Tester Submenu**: Right-click the crab -> **🎭 Test Animations** to test all 17 mascot animations on demand, plus **Resume Live State** to return to real-time Claude Code tracking.
   - **Hats**: Top hat, chef's hat, fedora, and animated helicopter hat with synchronized dual-phase spinning rotor.
   - **Scaling**: Pixel-crisp nearest-neighbor integer scaling (Small: 102x96, Medium: 153x144, Large: 204x192) preserving the 51:48 aspect ratio.
-- **VS Code Pet Physics & Easter Eggs**:
+- **Physics & Easter Eggs**:
   - **Fling & Momentum Toss**: Drag and throw the crab with your mouse; it carries velocity with air friction and elastically bounces off monitor work area edges.
   - **🚀 Fly & Bounce (Helicopter Flight Mode)**: Right-click -> **🚀 Fly & Bounce** equips the helicopter hat and flies across the screen in sinusoidal floating arcs, bouncing off edges before smoothly gliding home and landing.
   - **🐾 Smart Inactivity Wandering**: Automatically detects user absence via Win32 `GetLastInputInfo` (>=20s inactivity) and takes walking strolls; immediately scurries home when the user touches mouse or keyboard. Trigger on demand via **🐾 Take a Walk Now**.

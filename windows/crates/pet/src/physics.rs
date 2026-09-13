@@ -227,3 +227,44 @@ impl PhysicsController {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_physics_initialization_and_fling() {
+        let mut pc = PhysicsController::new(100, 200);
+        assert!(!pc.is_active());
+
+        pc.start_fling(100, 200, 15.0, -10.0, HatType::Top);
+        assert!(pc.is_active());
+        assert_eq!(pc.mode, PhysicsMode::Fling);
+        assert_eq!(pc.facing, 1);
+        assert_eq!(pc.original_hat, HatType::Top);
+        assert_eq!(pc.flight_hat, Some(HatType::Helicopter));
+    }
+
+    #[test]
+    fn test_physics_easter_egg_and_bounce() {
+        let mut pc = PhysicsController::new(500, 500);
+        pc.start_easter_egg_flight(500, 500, HatType::Fedora);
+        assert!(pc.is_active());
+        assert_eq!(pc.mode, PhysicsMode::EasterEggFlight);
+
+        let work_area = RECT {
+            left: 0,
+            top: 0,
+            right: 1920,
+            bottom: 1080,
+        };
+
+        // Simulate several physics frames
+        for _ in 0..10 {
+            std::thread::sleep(Duration::from_millis(5));
+            let step = pc.update(&work_area, 153, 144);
+            assert!(step.is_some());
+        }
+    }
+}
+

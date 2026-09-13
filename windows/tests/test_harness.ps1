@@ -270,6 +270,10 @@ function Report-SuiteResults {
 function Find-PetBinary {
     $candidates = @(
         $env:SIDECRAB_PET_BIN,
+        "a:\CODE\claude pet\windows\target\release\sidecrab-pet.exe",
+        "a:\CODE\claude pet\windows\target\release\sidecrab.exe",
+        "a:\CODE\claude pet\windows\target\debug\sidecrab-pet.exe",
+        "a:\CODE\claude pet\windows\target\debug\sidecrab.exe",
         "a:\CODE\claude pet\target\release\sidecrab-pet.exe",
         "a:\CODE\claude pet\target\release\sidecrab.exe",
         "a:\CODE\claude pet\target\debug\sidecrab-pet.exe",
@@ -288,6 +292,8 @@ function Find-PetBinary {
 function Find-HookBinary {
     $candidates = @(
         $env:SIDECRAB_HOOK_BIN,
+        "a:\CODE\claude pet\windows\target\release\sidecrab-hook.exe",
+        "a:\CODE\claude pet\windows\target\debug\sidecrab-hook.exe",
         "a:\CODE\claude pet\target\release\sidecrab-hook.exe",
         "a:\CODE\claude pet\target\debug\sidecrab-hook.exe",
         "target\release\sidecrab-hook.exe",

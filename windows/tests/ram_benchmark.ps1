@@ -10,8 +10,12 @@ param(
     [int]$DurationSeconds = 32,
     [int]$SamplingIntervalMs = 400,
     [double]$MaxMemoryMB = 10.0,
-    [string]$ReportJsonPath = "a:\CODE\claude pet\tests\ram_benchmark_report.json"
+    [string]$ReportJsonPath = ""
 )
+
+if (-not $ReportJsonPath) {
+    $ReportJsonPath = Join-Path $PSScriptRoot "ram_benchmark_report.json"
+}
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"

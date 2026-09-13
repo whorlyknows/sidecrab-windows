@@ -7,7 +7,7 @@ use windows_sys::Win32::Foundation::*;
 use windows_sys::Win32::System::ProcessStatus::EmptyWorkingSet;
 use windows_sys::Win32::System::Threading::GetCurrentProcess;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
-    GetCapture, ReleaseCapture, SetCapture, TrackMouseEvent, TME_LEAVE, TRACKMOUSEEVENT,
+    ReleaseCapture, SetCapture, TrackMouseEvent, TME_LEAVE, TRACKMOUSEEVENT,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
@@ -206,7 +206,7 @@ pub unsafe extern "system" fn pet_wndproc(
 
                     SetWindowPos(
                         hwnd,
-                        0,
+                        null_mut(),
                         state.x,
                         state.y,
                         0,
@@ -363,6 +363,8 @@ pub unsafe extern "system" fn pet_wndproc(
                 {
                     if state.last_hook_time.elapsed().as_secs() >= 15 {
                         state.animator.apply_feed_state(MascotState::Idle);
+                        let s_path = state_path();
+                        let _ = std::fs::write(&s_path, r#"{"state":"idle","mood":"neutral","label":"Idle"}"#);
                     }
                 }
 

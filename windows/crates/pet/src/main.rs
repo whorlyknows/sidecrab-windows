@@ -8,6 +8,7 @@ mod dib;
 mod focus;
 mod ipc;
 mod menu;
+mod physics;
 mod wander;
 mod window;
 
@@ -22,6 +23,7 @@ use assets::{CANVAS_H, CANVAS_W};
 use config::load_config;
 use dib::LayeredFrameBuffer;
 use ipc::start_state_watcher;
+use physics::PhysicsController;
 use wander::WanderController;
 use window::*;
 
@@ -59,13 +61,16 @@ fn main() {
             return;
         }
 
-        // 4. Initialize framebuffer and animation state
+        // 4. Initialize framebuffer, animation state, wander, and physics
         let framebuffer = LayeredFrameBuffer::new(width, height, scale);
         let mut animator = anim::AnimationController::new();
         animator.hat = cfg.hat;
 
         let mut wanderer = WanderController::new(cfg.x, cfg.y);
         wanderer.enabled = cfg.wander_enabled;
+
+        let physics = PhysicsController::new(cfg.x, cfg.y);
+        let now = Instant::now();
 
         let state = Box::new(AppState {
             hwnd,
@@ -76,9 +81,17 @@ fn main() {
             logical_buffer: [[0; 4]; CANVAS_W * CANVAS_H],
             animator,
             wanderer,
-            last_tick: Instant::now(),
-            last_trim: Instant::now() - std::time::Duration::from_secs(10),
+            physics,
+            last_tick: now,
+            last_trim: now - std::time::Duration::from_secs(10),
             is_active_fps: true,
+            is_dragging: false,
+            drag_start_cursor: POINT { x: 0, y: 0 },
+            drag_start_win: POINT { x: cfg.x, y: cfg.y },
+            last_mouse_pos: POINT { x: 0, y: 0 },
+            last_mouse_time: now,
+            mouse_velocity: (0.0, 0.0),
+            last_hook_time: now,
         });
 
         let state_raw = Box::into_raw(state);
@@ -86,7 +99,7 @@ fn main() {
 
         // 5. Initial render and presentation
         (*state_raw).render_and_present();
-        SetTimer(hwnd, TIMER_ANIM_ID, 83, None); // 12 FPS active animation timer
+        SetTimer(hwnd, TIMER_ANIM_ID, 50, None); // 20 FPS smooth active timer
 
         // 6. Start background IPC watcher
         start_state_watcher(hwnd as isize);

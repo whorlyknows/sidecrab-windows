@@ -8,8 +8,12 @@ param(
     [string]$PetBinPath = "",
     [int]$SampleSeconds = 10,
     [double]$MaxCpuPercent = 0.2,
-    [string]$ReportJsonPath = "a:\CODE\claude pet\tests\cpu_benchmark_report.json"
+    [string]$ReportJsonPath = ""
 )
+
+if (-not $ReportJsonPath) {
+    $ReportJsonPath = Join-Path $PSScriptRoot "cpu_benchmark_report.json"
+}
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"

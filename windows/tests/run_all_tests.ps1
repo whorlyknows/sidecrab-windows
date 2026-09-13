@@ -24,6 +24,10 @@ Write-Host "Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" -Foregroun
 # Auto-detect binaries if not provided
 if (-not $PetBin) {
     $petCandidates = @(
+        "a:\CODE\claude pet\windows\target\release\sidecrab-pet.exe",
+        "a:\CODE\claude pet\windows\target\release\sidecrab.exe",
+        "a:\CODE\claude pet\windows\target\debug\sidecrab-pet.exe",
+        "a:\CODE\claude pet\windows\target\debug\sidecrab.exe",
         "a:\CODE\claude pet\target\release\sidecrab-pet.exe",
         "a:\CODE\claude pet\target\release\sidecrab.exe",
         "a:\CODE\claude pet\target\debug\sidecrab-pet.exe",
@@ -36,6 +40,8 @@ if (-not $PetBin) {
 
 if (-not $HookBin) {
     $hookCandidates = @(
+        "a:\CODE\claude pet\windows\target\release\sidecrab-hook.exe",
+        "a:\CODE\claude pet\windows\target\debug\sidecrab-hook.exe",
         "a:\CODE\claude pet\target\release\sidecrab-hook.exe",
         "a:\CODE\claude pet\target\debug\sidecrab-hook.exe"
     )

@@ -17,14 +17,21 @@
   - **Memory Working Set**: Peak **4.95 MB** during active animation transitions; idle average **~1.83 MB** (passing the 10MB budget by >50%).
   - **CPU Utilization**: **0.005%** average idle CPU on modern Windows hardware.
   - **Binary Size**: Self-contained release binaries (`sidecrab-pet.exe`: 339 KB; `sidecrab-hook.exe`: 249 KB) with no external runtimes or DLL requirements.
-- **Full Mascot & Animation Parity**:
-  - **Animations**: Neutral stand, micro-idles (blink, stretch, peek, shuffle), thinking (seated pondering with dynamic thought bubble), working (typing at laptop), permission alert (energetic claw wave), done (celebration hop), sleep/nap, and border wandering strolls.
+- **Full Mascot & Animation Parity + Tester Menu**:
+  - **Animations**: Neutral stand, micro-idles (blink, stretch, peek, shuffle), thinking (seated pondering with dynamic thought bubble), working (typing at laptop), permission alert (energetic claw wave), done (celebration hop), sleep/nap, panic/carried pose, glare, chase, and border wandering strolls.
+  - **🎭 Animation Tester Submenu**: Right-click the crab -> **🎭 Test Animations** to test all 17 mascot animations on demand, plus **Resume Live State** to return to real-time Claude Code tracking.
   - **Hats**: Top hat, chef's hat, fedora, and animated helicopter hat with synchronized dual-phase spinning rotor.
   - **Scaling**: Pixel-crisp nearest-neighbor integer scaling (Small: 102x96, Medium: 153x144, Large: 204x192) preserving the 51:48 aspect ratio.
-- **Shell Interactions**:
-  - **Drag anywhere**: Move the pet across monitors; position persists to `%USERPROFILE%/.sidecrab/config.json`.
+- **VS Code Pet Physics & Easter Eggs**:
+  - **Fling & Momentum Toss**: Drag and throw the crab with your mouse; it carries velocity with air friction and elastically bounces off monitor work area edges.
+  - **🚀 Fly & Bounce (Helicopter Flight Mode)**: Right-click -> **🚀 Fly & Bounce** equips the helicopter hat and flies across the screen in sinusoidal floating arcs, bouncing off edges before smoothly gliding home and landing.
+  - **🐾 Smart Inactivity Wandering**: Automatically detects user absence via Win32 `GetLastInputInfo` (>=20s inactivity) and takes walking strolls; immediately scurries home when the user touches mouse or keyboard. Trigger on demand via **🐾 Take a Walk Now**.
+- **Robust Shell Interactions & State Watchdog**:
+  - **Non-blocking Dragging**: Smooth `SetCapture` dragging with cute panic/carried pose; never conflicts with message loops or causes animation lock.
+  - **15-Second Stale State Watchdog**: Automatically resets unclosed tool or thinking states back to `idle` if Claude Code has been silent for 15s.
+  - **🔄 Reset State to Idle**: Manual instant recovery option in context menu.
   - **Double-click**: Focuses and brings the active Claude Code session host window (Windows Terminal, VS Code, PowerShell, etc.) to the foreground using Win32 `AttachThreadInput` + `SetForegroundWindow`.
-  - **Right-click Context Menu**: Native Win32 menu for Size (S/M/L), Corner Presets (Top-Left, Top-Right, Bottom-Left, Bottom-Right, Reset), Hats, Wander Mode toggle, Autostart at login, Install/Remove hooks, and Exit.
+  - **Right-click Context Menu**: Native Win32 menu for Size, Corner Presets, Hats, Test Animations, Fly & Bounce, Wander Now, Reset, Autostart at login, Install/Remove hooks, and Exit.
 - **Claude Code Hooks CLI (`sidecrab-hook.exe`)**:
   - Handles all 8 lifecycle events: `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Notification`, `PermissionRequest`, `Stop`, `SessionStart`, `SessionEnd`.
   - Hardened Windows pipe reader (`PeekNamedPipe`) for non-blocking stdin ingestion.

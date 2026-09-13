@@ -1,7 +1,11 @@
 use std::time::{Duration, Instant};
 use windows_sys::Win32::Foundation::RECT;
-use windows_sys::Win32::System::SystemInformation::GetTickCount;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};
+
+#[link(name = "kernel32")]
+extern "system" {
+    fn GetTickCount() -> u32;
+}
 
 pub const STEP_MS: u64 = 28;
 pub const WANDER_SPEED: f32 = 3.5; // 3.5 px / step

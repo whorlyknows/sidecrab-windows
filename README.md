@@ -57,6 +57,8 @@ Automated 30+ second stress verification with continuous state transitions (`tes
 
 ## 🚀 Installation & Usage
 
+you could also just install the exe file at realeases
+
 ### 1. Build Binaries
 ```powershell
 cargo build --release

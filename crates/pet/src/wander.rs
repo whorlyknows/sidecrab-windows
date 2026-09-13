@@ -233,7 +233,7 @@ impl WanderController {
             }
         } else if roll < 9 {
             // 10%: Stroll along screen borders
-            let on_right = (self.pseudo_rand() % 2) == 0;
+            let on_right = (self.pseudo_rand() & 1) == 0;
             self.target_x = if on_right { max_x } else { min_x };
             let span_y = (floor_y - min_y).max(1.0);
             let ry = (self.pseudo_rand() as f32) % span_y;

@@ -139,8 +139,17 @@ pub fn get_eye_data(frame: &[u8]) -> (Vec<EyePixel>, [usize; FRAME_W]) {
     (pixels, bottoms)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SnackKind {
+    Cookie,
+    Cake,
+    Pizza,
+    Apple,
+}
+
 /// Compositor: Renders a complete mascot frame onto a 51x48 logical canvas.
 /// Output format: 51 * 48 pixels in BGRA (pre-multiplied ARGB) format (9,792 bytes).
+#[allow(clippy::too_many_arguments)]
 pub fn composite_logical_frame(
     buf: &mut [[u8; 4]; CANVAS_W * CANVAS_H],
     frame_idx: usize,
@@ -153,6 +162,7 @@ pub fn composite_logical_frame(
     eyes_dx: i32,
     eyes_dy: i32,
     sit_legs: bool,
+    blush: bool,
     hat: HatType,
     hat_anim_tick: u64, // drives helicopter rotor alternating at 130ms
     thought_phase: Option<usize>, // Some(0..4) when thinking
@@ -183,14 +193,14 @@ pub fn composite_logical_frame(
             }
 
             // If sitting, hide the 4 vertical standing legs from Frame 0
-            if sit_legs && cy >= 27 {
-                if (cx >= 9 && cx <= 12)
-                    || (cx >= 17 && cx <= 20)
-                    || (cx >= 30 && cx <= 33)
-                    || (cx >= 38 && cx <= 41)
-                {
-                    continue;
-                }
+            if sit_legs
+                && cy >= 27
+                && ((9..=12).contains(&cx)
+                    || (17..=20).contains(&cx)
+                    || (30..=33).contains(&cx)
+                    || (38..=41).contains(&cx))
+            {
+                continue;
             }
 
             let mut final_color = PALETTE_BGRA[pixel_idx as usize];
@@ -297,6 +307,28 @@ pub fn composite_logical_frame(
             let target_y = (base_y as i32) + shifted_y;
             if target_x >= 0 && (target_x as usize) < CANVAS_W && target_y >= 0 && (target_y as usize) < CANVAS_H {
                 buf[target_y as usize * CANVAS_W + target_x as usize] = PALETTE_BGRA[1]; // Black pupil
+            }
+        }
+    }
+
+    // Draw rosy blush cheeks when happy/petted/snacking/sitting
+    if blush {
+        // Left cheek: cx 10..=12, cy 13..=14
+        // Right cheek: cx 38..=40, cy 13..=14
+        const BLUSH_COLOR: [u8; 4] = [170, 110, 255, 230]; // Soft coral pink BGRA
+        let cheek_coords = [
+            (10, 13), (11, 13), (12, 13), (10, 14), (11, 14), (12, 14),
+            (38, 13), (39, 13), (40, 13), (38, 14), (39, 14), (40, 14),
+        ];
+        for &(cx, cy) in &cheek_coords {
+            let target_x = if facing == -1 {
+                (CANVAS_W - 1) as i32 - cx
+            } else {
+                cx
+            };
+            let target_y = (base_y as i32) + cy;
+            if target_x >= 0 && (target_x as usize) < CANVAS_W && target_y >= 0 && (target_y as usize) < CANVAS_H {
+                buf[target_y as usize * CANVAS_W + target_x as usize] = BLUSH_COLOR;
             }
         }
     }
@@ -445,27 +477,107 @@ pub fn draw_heart(buf: &mut [[u8; 4]; CANVAS_W * CANVAS_H], hx: i32, hy: i32) {
     }
 }
 
-/// Draws a cute 6x6 pixel chocolate chip cookie snack at logical canvas coordinates (sx, sy).
-pub fn draw_snack(buf: &mut [[u8; 4]; CANVAS_W * CANVAS_H], sx: i32, sy: i32) {
-    const SNACK_MAP: [&str; 6] = [
-        ".cccc.",
-        "cooccc",
-        "ccoccc",
-        "cccooc",
-        "cooccc",
-        ".cccc.",
-    ];
-    for (r, row) in SNACK_MAP.iter().enumerate() {
-        for (c, ch) in row.chars().enumerate() {
-            let color = match ch {
-                'c' => [35, 120, 205, 255], // Cookie golden brown BGRA
-                'o' => [15, 45, 80, 255],   // Dark chocolate chip
-                _ => continue,
-            };
-            let px = sx + c as i32;
-            let py = sy + r as i32;
-            if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
-                buf[py as usize * CANVAS_W + px as usize] = color;
+/// Draws a cute 6x6 pixel snack treat at logical canvas coordinates (sx, sy).
+pub fn draw_snack(buf: &mut [[u8; 4]; CANVAS_W * CANVAS_H], sx: i32, sy: i32, kind: SnackKind) {
+    match kind {
+        SnackKind::Cookie => {
+            const COOKIE_MAP: [&str; 6] = [
+                ".cccc.",
+                "cooccc",
+                "ccoccc",
+                "cccooc",
+                "cooccc",
+                ".cccc.",
+            ];
+            for (r, row) in COOKIE_MAP.iter().enumerate() {
+                for (c, ch) in row.chars().enumerate() {
+                    let color = match ch {
+                        'c' => [35, 120, 205, 255], // Cookie golden brown BGRA
+                        'o' => [15, 45, 80, 255],   // Dark chocolate chip
+                        _ => continue,
+                    };
+                    let px = sx + c as i32;
+                    let py = sy + r as i32;
+                    if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
+                        buf[py as usize * CANVAS_W + px as usize] = color;
+                    }
+                }
+            }
+        }
+        SnackKind::Cake => {
+            const CAKE_MAP: [&str; 6] = [
+                "..r...",
+                ".www..",
+                "wpppw.",
+                "bwwbwb",
+                "bppbpb",
+                "bbbbbb",
+            ];
+            for (r, row) in CAKE_MAP.iter().enumerate() {
+                for (c, ch) in row.chars().enumerate() {
+                    let color = match ch {
+                        'r' => [40, 40, 235, 255],   // Red berry
+                        'w' => [245, 245, 250, 255], // Whipped cream
+                        'p' => [180, 130, 255, 255], // Pink frosting
+                        'b' => [40, 140, 215, 255],  // Golden cake sponge
+                        _ => continue,
+                    };
+                    let px = sx + c as i32;
+                    let py = sy + r as i32;
+                    if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
+                        buf[py as usize * CANVAS_W + px as usize] = color;
+                    }
+                }
+            }
+        }
+        SnackKind::Pizza => {
+            const PIZZA_MAP: [&str; 6] = [
+                ".bbbb.",
+                ".yyyy.",
+                "..ryy.",
+                "..yry.",
+                "...yy.",
+                "....y.",
+            ];
+            for (r, row) in PIZZA_MAP.iter().enumerate() {
+                for (c, ch) in row.chars().enumerate() {
+                    let color = match ch {
+                        'b' => [30, 100, 180, 255],  // Crust brown
+                        'y' => [50, 220, 255, 255],  // Golden cheese
+                        'r' => [35, 35, 220, 255],   // Pepperoni red
+                        _ => continue,
+                    };
+                    let px = sx + c as i32;
+                    let py = sy + r as i32;
+                    if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
+                        buf[py as usize * CANVAS_W + px as usize] = color;
+                    }
+                }
+            }
+        }
+        SnackKind::Apple => {
+            const APPLE_MAP: [&str; 6] = [
+                "..s...",
+                "..ll..",
+                ".rrrr.",
+                "rrrrrr",
+                "rrrrrr",
+                ".rrrr.",
+            ];
+            for (r, row) in APPLE_MAP.iter().enumerate() {
+                for (c, ch) in row.chars().enumerate() {
+                    let color = match ch {
+                        's' => [20, 50, 80, 255],    // Stem brown
+                        'l' => [50, 180, 60, 255],   // Leaf green
+                        'r' => [35, 40, 225, 255],   // Red apple
+                        _ => continue,
+                    };
+                    let px = sx + c as i32;
+                    let py = sy + r as i32;
+                    if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
+                        buf[py as usize * CANVAS_W + px as usize] = color;
+                    }
+                }
             }
         }
     }
@@ -512,7 +624,7 @@ mod tests {
     fn test_happy_eyes_and_heart_rendering() {
         let mut buf = [[0u8; 4]; CANVAS_W * CANVAS_H];
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, true, 0, 0, false,
+            &mut buf, 0, 0, 1, false, false, false, true, 0, 0, false, false,
             HatType::None, 0, None, None, None,
         );
         // Happy carets draw black pixels on row 8 & 9
@@ -529,16 +641,25 @@ mod tests {
     fn test_sit_legs_and_snack_rendering() {
         let mut buf = [[0u8; 4]; CANVAS_W * CANVAS_H];
         composite_logical_frame(
-            &mut buf, 0, 5, 1, false, false, false, true, 0, 0, true,
+            &mut buf, 0, 5, 1, false, false, false, true, 0, 0, true, true,
             HatType::None, 0, None, None, None,
         );
         let has_opaque = buf.iter().any(|p| p[3] > 0);
         assert!(has_opaque, "Sitting frame must render opaque pixels");
 
-        // Test snack
-        draw_snack(&mut buf, 20, 20);
-        let snack_pixels = buf.iter().filter(|&&p| p == [35, 120, 205, 255]).count();
-        assert!(snack_pixels > 0, "Snack cookie must render cookie pixels");
+        // Blush cheek pixels rendered
+        const BLUSH_COLOR: [u8; 4] = [170, 110, 255, 230];
+        let blush_count = buf.iter().filter(|&&p| p == BLUSH_COLOR).count();
+        assert_eq!(blush_count, 12, "Blush cheeks must render exactly 12 soft pink pixels");
+
+        // Test all 4 snacks
+        let snacks = [SnackKind::Cookie, SnackKind::Cake, SnackKind::Pizza, SnackKind::Apple];
+        for snack in snacks {
+            let mut snack_buf = [[0u8; 4]; CANVAS_W * CANVAS_H];
+            draw_snack(&mut snack_buf, 20, 20, snack);
+            let snack_pixels = snack_buf.iter().filter(|p| p[3] > 0).count();
+            assert!(snack_pixels > 0, "Snack {:?} must render opaque pixels", snack);
+        }
 
         // Test zzz
         draw_zzz(&mut buf, 25, 5, false);
@@ -571,7 +692,7 @@ mod tests {
 
         // 1. None hat
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::None, 0, None, None, None,
         );
         let opaque_count_none = buf.iter().filter(|p| p[3] > 0).count();
@@ -579,7 +700,7 @@ mod tests {
 
         // 2. Top hat
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::Top, 0, None, None, None,
         );
         let opaque_count_top = buf.iter().filter(|p| p[3] > 0).count();
@@ -587,7 +708,7 @@ mod tests {
 
         // 3. Chef hat
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::Chef, 0, None, None, None,
         );
         let opaque_count_chef = buf.iter().filter(|p| p[3] > 0).count();
@@ -595,7 +716,7 @@ mod tests {
 
         // 4. Fedora
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::Fedora, 0, None, None, None,
         );
         let opaque_count_fedora = buf.iter().filter(|p| p[3] > 0).count();
@@ -603,14 +724,14 @@ mod tests {
 
         // 5. Helicopter (Phase 0 and Phase 1)
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::Helicopter, 0, None, None, None,
         );
         let opaque_count_heli0 = buf.iter().filter(|p| p[3] > 0).count();
         assert!(opaque_count_heli0 > opaque_count_none, "Heli0 must add opaque pixels");
 
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::Helicopter, 130, None, None, None,
         );
         let opaque_count_heli1 = buf.iter().filter(|p| p[3] > 0).count();
@@ -623,7 +744,7 @@ mod tests {
 
         // Thought bubble
         composite_logical_frame(
-            &mut buf, 26, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 26, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::None, 0, Some(2), None, None,
         );
         let bubble_pixel_found = buf.iter().any(|&p| p == COLOR_BUBBLE_BGRA);
@@ -631,7 +752,7 @@ mod tests {
 
         // Alert mark "!?"
         composite_logical_frame(
-            &mut buf, 27, 0, 1, false, false, false, false, 0, 0, false,
+            &mut buf, 27, 0, 1, false, false, false, false, 0, 0, false, false,
             HatType::None, 0, None, Some("!?"), None,
         );
         let alert_found = buf.iter().any(|&p| p == COLOR_BUBBLE_BGRA);
@@ -639,7 +760,7 @@ mod tests {
 
         // Sleep Z's
         composite_logical_frame(
-            &mut buf, 0, 2, 1, false, true, false, false, 0, 0, false,
+            &mut buf, 0, 2, 1, false, true, false, false, 0, 0, false, false,
             HatType::None, 0, None, None, Some(0),
         );
         let z_found = buf.iter().any(|&p| p == COLOR_BUBBLE_BGRA);

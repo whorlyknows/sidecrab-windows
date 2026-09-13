@@ -59,25 +59,22 @@ pub unsafe fn detect_host_terminal() -> (Option<String>, u32, u64) {
             let end = name_raw.iter().position(|&c| c == 0).unwrap_or(name_raw.len());
             let name_str = String::from_utf16_lossy(&name_raw[..end]);
 
-            if host_pid == 0 {
-                if name_str.contains("windowsterminal")
+            if host_pid == 0
+                && (name_str.contains("windowsterminal")
                     || name_str.contains("code")
                     || name_str.contains("cursor")
                     || name_str.contains("alacritty")
                     || name_str.contains("wezterm")
                     || name_str.contains("powershell")
                     || name_str.contains("cmd")
-                    || name_str.contains("conhost")
-                {
-                    host_pid = check_pid;
-                    host_name = Some(name_str);
-                }
+                    || name_str.contains("conhost"))
+            {
+                host_pid = check_pid;
+                host_name = Some(name_str);
             }
 
-            if host_pid != 0 {
-                if !candidate_pids.contains(&check_pid) {
-                    candidate_pids.push(check_pid);
-                }
+            if host_pid != 0 && !candidate_pids.contains(&check_pid) {
+                candidate_pids.push(check_pid);
             }
 
             if ppid == 0 || ppid == check_pid {
@@ -92,7 +89,7 @@ pub unsafe fn detect_host_terminal() -> (Option<String>, u32, u64) {
     if host_pid == 0 {
         if let Some(&(ppid, _)) = tree.get(&current_pid) {
             host_pid = ppid;
-            if let Some(&(_, ref parent_name)) = tree.get(&ppid) {
+            if let Some((_, parent_name)) = tree.get(&ppid) {
                 let end = parent_name.iter().position(|&c| c == 0).unwrap_or(parent_name.len());
                 host_name = Some(String::from_utf16_lossy(&parent_name[..end]));
             }

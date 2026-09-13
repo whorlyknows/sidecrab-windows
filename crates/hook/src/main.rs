@@ -173,8 +173,6 @@ fn main() {
         .unwrap_or_else(|| {
             if payload.tool_name.is_some() {
                 HookEvent::PreToolUse
-            } else if payload.prompt.is_some() {
-                HookEvent::UserPromptSubmit
             } else {
                 HookEvent::UserPromptSubmit
             }

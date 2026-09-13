@@ -15,7 +15,7 @@ fn current_timestamp() -> u64 {
 }
 
 fn truncate_str(s: &str, max_len: usize) -> String {
-    let clean = s.replace('\r', " ").replace('\n', " ");
+    let clean = s.replace(['\r', '\n'], " ");
     let trimmed = clean.trim();
     if trimmed.chars().count() > max_len {
         let truncated: String = trimmed.chars().take(max_len).collect();
@@ -70,18 +70,23 @@ pub fn handle_hook_event(event: HookEvent, payload: &RawHookPayload) {
 
     // If SessionStart is fired by a secondary session while primary session is actively working,
     // do not stomp the primary session's active state!
-    if event == HookEvent::SessionStart {
-        if !prev_sid.is_empty() && !sid.is_empty() && prev_sid != sid && prev_state.state != "idle" {
-            return;
-        }
+    if event == HookEvent::SessionStart
+        && !prev_sid.is_empty()
+        && !sid.is_empty()
+        && prev_sid != sid
+        && prev_state.state != "idle"
+    {
+        return;
     }
 
     // If SessionEnd is fired by a session that is NOT the active owner of state.json,
     // do not stomp the active session's state!
-    if event == HookEvent::SessionEnd {
-        if !prev_sid.is_empty() && !sid.is_empty() && prev_sid != sid {
-            return;
-        }
+    if event == HookEvent::SessionEnd
+        && !prev_sid.is_empty()
+        && !sid.is_empty()
+        && prev_sid != sid
+    {
+        return;
     }
 
     let now = current_timestamp();

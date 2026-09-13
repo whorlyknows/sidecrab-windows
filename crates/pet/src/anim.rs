@@ -81,18 +81,18 @@ pub enum AnimId {
 
 impl AnimId {
     pub fn is_looping(&self) -> bool {
-        match self {
+        !matches!(
+            self,
             AnimId::Blink
-            | AnimId::Shuffle
-            | AnimId::Stretch
-            | AnimId::Peek
-            | AnimId::Look
-            | AnimId::Wave
-            | AnimId::Celebrate
-            | AnimId::Relax
-            | AnimId::Eat => false,
-            _ => true,
-        }
+                | AnimId::Shuffle
+                | AnimId::Stretch
+                | AnimId::Peek
+                | AnimId::Look
+                | AnimId::Wave
+                | AnimId::Celebrate
+                | AnimId::Relax
+                | AnimId::Eat
+        )
     }
 }
 
@@ -110,6 +110,9 @@ pub struct AnimationController {
     pub sleeping: bool,
     pub cursor_eye_dx: i32,
     pub cursor_eye_dy: i32,
+
+    pub pet_combo: u32,
+    pub last_pet_time: Instant,
 
     step_elapsed: Duration,
     total_elapsed_ms: u64,
@@ -141,6 +144,8 @@ impl AnimationController {
             sleeping: false,
             cursor_eye_dx: 0,
             cursor_eye_dy: 0,
+            pet_combo: 0,
+            last_pet_time: now,
             step_elapsed: Duration::ZERO,
             total_elapsed_ms: 0,
             idle_since: now,
@@ -288,7 +293,15 @@ impl AnimationController {
     /// User petted the mascot (click while seated bounces without leaving desk).
     pub fn pet(&mut self) {
         self.sleeping = false;
-        self.idle_since = Instant::now();
+        let now = Instant::now();
+        self.idle_since = now;
+        if now.duration_since(self.last_pet_time).as_secs_f32() < 1.4 {
+            self.pet_combo = (self.pet_combo + 1).min(5);
+        } else {
+            self.pet_combo = 1;
+        }
+        self.last_pet_time = now;
+
         let seated = !self.traveling && (self.feed_state == MascotState::Tool || self.feed_state == MascotState::Working || self.feed_state == MascotState::Thinking || self.show_thought);
         let pet_anim = if seated && (self.feed_state == MascotState::Tool || self.feed_state == MascotState::Working) {
             AnimId::PetWork
@@ -306,6 +319,11 @@ impl AnimationController {
         let dt_ms = dt.as_millis() as u64;
         self.total_elapsed_ms += dt_ms;
         self.step_elapsed += dt;
+
+        // Reset pet combo if idle for more than 2.5s
+        if self.pet_combo > 0 && self.last_pet_time.elapsed().as_secs_f32() > 2.5 {
+            self.pet_combo = 0;
+        }
 
         // Check celebrate decay -> reset to idle so it doesn't loop celebrate forever
         if let Some(decay) = self.celebrate_decay_ms {
@@ -348,17 +366,18 @@ impl AnimationController {
                     AnimId::Think,
                     AnimId::Work,
                     AnimId::Alert,
-                    AnimId::Glare,
-                    AnimId::Chase,
                 ];
-                let idx = (self.pseudo_rand() as usize) % micros.len();
-                self.play(micros[idx]);
+                let chosen = micros[(self.pseudo_rand() as usize) % micros.len()];
+                self.play(chosen);
                 self.next_micro_ms = self.total_elapsed_ms + self.rand_range(4000, 7000);
             }
         }
 
         // Advance animation step
         let steps = self.get_steps(self.current_anim);
+        if steps.is_empty() {
+            return;
+        }
         if self.step_index >= steps.len() {
             self.step_index = 0;
             self.step_elapsed = Duration::ZERO;
@@ -389,7 +408,7 @@ impl AnimationController {
     }
 
     /// Returns the current step and ambient flags to render.
-    pub fn current_render_step(&mut self) -> (AnimStep, bool, Option<usize>) {
+    pub fn current_render_step(&mut self) -> (AnimStep, bool, Option<usize>, bool) {
         let steps = self.get_steps(self.current_anim);
         let mut step = steps[self.step_index.min(steps.len() - 1)];
 
@@ -403,13 +422,13 @@ impl AnimationController {
 
         // Ambient blink check
         let mut ambient_blink = false;
-        if !step.blink && !step.squint && !step.half_eyes && step.eyes_dx == 0 && step.eyes_dy == 0 {
-            if self.total_elapsed_ms >= self.next_blink_ms {
-                if self.total_elapsed_ms < self.next_blink_ms + 140 {
-                    ambient_blink = true;
-                } else {
-                    self.next_blink_ms = self.total_elapsed_ms + self.rand_range(3500, 9000);
-                }
+        if !step.blink && !step.squint && !step.half_eyes && step.eyes_dx == 0 && step.eyes_dy == 0
+            && self.total_elapsed_ms >= self.next_blink_ms
+        {
+            if self.total_elapsed_ms < self.next_blink_ms + 140 {
+                ambient_blink = true;
+            } else {
+                self.next_blink_ms = self.total_elapsed_ms + self.rand_range(3500, 9000);
             }
         }
 
@@ -420,7 +439,13 @@ impl AnimationController {
             None
         };
 
-        (step, ambient_blink, thought_phase)
+        // Rosy blush cheeks when happy / combo petted / eating / sitting
+        let blush = self.pet_combo >= 2
+            || self.current_anim == AnimId::Eat
+            || self.current_anim == AnimId::Relax
+            || (self.current_anim == AnimId::Celebrate && self.pet_combo > 0);
+
+        (step, ambient_blink, thought_phase, blush)
     }
 
     pub fn total_ms(&self) -> u64 {
@@ -635,3 +660,50 @@ pub static EAT_STEPS: [AnimStep; 6] = [
     AnimStep::new(0, 280).with_dy(-3).with_happy_eyes(),
     AnimStep::new(0, 250).with_dy(0).with_happy_eyes(),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_animation_controller_pet_combo_and_blush() {
+        let mut anim = AnimationController::new();
+        assert_eq!(anim.pet_combo, 0);
+
+        // First pet -> combo 1, celebrate animation
+        anim.pet();
+        assert_eq!(anim.pet_combo, 1);
+        assert_eq!(anim.current_anim, AnimId::Celebrate);
+        let (_, _, _, blush1) = anim.current_render_step();
+        assert!(blush1, "Single pet celebrate should blush");
+
+        // Second immediate pet -> combo 2, blush active
+        anim.pet();
+        assert_eq!(anim.pet_combo, 2);
+        let (_, _, _, blush2) = anim.current_render_step();
+        assert!(blush2, "Pet combo >= 2 must activate blush");
+
+        // Relax / sit animation activates blush
+        anim.play(AnimId::Relax);
+        let (_, _, _, blush_relax) = anim.current_render_step();
+        assert!(blush_relax, "Sitting relaxed must activate blush");
+
+        // Eat animation activates blush
+        anim.play(AnimId::Eat);
+        let (_, _, _, blush_eat) = anim.current_render_step();
+        assert!(blush_eat, "Eating treat must activate blush");
+    }
+
+    #[test]
+    fn test_test_override_and_clear() {
+        let mut anim = AnimationController::new();
+        anim.set_test_override(AnimId::Wave);
+        assert_eq!(anim.current_anim, AnimId::Wave);
+        assert_eq!(anim.test_override, Some(AnimId::Wave));
+
+        anim.clear_test_override();
+        assert_eq!(anim.test_override, None);
+        assert_eq!(anim.current_anim, AnimId::Rest);
+    }
+}
+

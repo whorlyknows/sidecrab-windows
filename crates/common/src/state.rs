@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 /// Visual animation states for the Sidecrab mascot.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum MascotState {
+    #[default]
     Idle,
     Thinking,
     Tool,
@@ -32,6 +33,7 @@ impl MascotState {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().trim() {
             "thinking" => MascotState::Thinking,
@@ -48,16 +50,11 @@ impl MascotState {
     }
 }
 
-impl Default for MascotState {
-    fn default() -> Self {
-        MascotState::Idle
-    }
-}
-
 /// Mood state indicator.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum MascotMood {
+    #[default]
     Neutral,
     Happy,
     Focused,
@@ -84,6 +81,7 @@ impl MascotMood {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().trim() {
             "happy" => MascotMood::Happy,
@@ -99,16 +97,11 @@ impl MascotMood {
     }
 }
 
-impl Default for MascotMood {
-    fn default() -> Self {
-        MascotMood::Neutral
-    }
-}
-
 /// Available hat accessories.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum HatType {
+    #[default]
     None,
     Top,
     Chef,
@@ -127,6 +120,7 @@ impl HatType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().trim() {
             "top" | "tophat" | "top_hat" => HatType::Top,
@@ -138,18 +132,13 @@ impl HatType {
     }
 }
 
-impl Default for HatType {
-    fn default() -> Self {
-        HatType::None
-    }
-}
-
 /// Window dimensions and integer nearest-neighbor scaling.
 /// Logical canvas is 51x48 (1.0625:1 aspect ratio).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum WindowSize {
     Small,  // 2x: 102x96
+    #[default]
     Medium, // 3x: 153x144
     Large,  // 4x: 204x192
 }
@@ -183,18 +172,13 @@ impl WindowSize {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().trim() {
             "small" | "s" => WindowSize::Small,
             "large" | "l" => WindowSize::Large,
             _ => WindowSize::Medium,
         }
-    }
-}
-
-impl Default for WindowSize {
-    fn default() -> Self {
-        WindowSize::Medium
     }
 }
 

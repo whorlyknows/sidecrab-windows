@@ -4,6 +4,9 @@ use common::{
 use std::ptr::{null, null_mut};
 use std::time::{Duration, Instant};
 use windows_sys::Win32::Foundation::*;
+use windows_sys::Win32::Graphics::Gdi::{
+    GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
+};
 use windows_sys::Win32::System::ProcessStatus::EmptyWorkingSet;
 use windows_sys::Win32::System::Threading::GetCurrentProcess;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
@@ -12,7 +15,7 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
 use crate::anim::{AnimId, AnimationController};
-use crate::assets::{composite_logical_frame, CANVAS_H, CANVAS_W, CRAB_Y};
+use crate::assets::{composite_logical_frame, SnackKind, CANVAS_H, CANVAS_W, CRAB_Y};
 use crate::autostart::{is_autostart_enabled, set_autostart};
 use crate::config::save_config;
 use crate::dib::LayeredFrameBuffer;
@@ -44,6 +47,7 @@ pub struct FloatingHeart {
 pub struct SnackItem {
     pub x: i32,
     pub y: i32,
+    pub kind: SnackKind,
     pub spawned: Instant,
     pub eaten: bool,
 }
@@ -197,7 +201,7 @@ impl AppState {
     }
 
     pub unsafe fn render_and_present(&mut self) {
-        let (step, ambient_blink, thought_phase) = self.animator.current_render_step();
+        let (step, ambient_blink, thought_phase, blush) = self.animator.current_render_step();
 
         composite_logical_frame(
             &mut self.logical_buffer,
@@ -211,6 +215,7 @@ impl AppState {
             step.eyes_dx,
             step.eyes_dy,
             step.sit_legs,
+            blush,
             self.animator.hat,
             self.animator.total_ms(),
             thought_phase,
@@ -222,7 +227,7 @@ impl AppState {
         if let Some(snack) = &self.snack {
             if !snack.eaten {
                 let sx = if self.animator.facing == -1 { 6 } else { 38 };
-                crate::assets::draw_snack(&mut self.logical_buffer, sx, (CANVAS_H - 9) as i32);
+                crate::assets::draw_snack(&mut self.logical_buffer, sx, (CANVAS_H - 9) as i32, snack.kind);
             }
         }
 
@@ -241,10 +246,17 @@ impl AppState {
     }
 }
 
-pub unsafe fn get_desktop_work_area() -> RECT {
-    let mut rc = RECT { left: 0, top: 0, right: 0, bottom: 0 };
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &mut rc as *mut _ as *mut _, 0);
-    rc
+pub unsafe fn get_desktop_work_area_for_hwnd(hwnd: HWND) -> RECT {
+    let monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    let mut mi: MONITORINFO = std::mem::zeroed();
+    mi.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
+    if GetMonitorInfoW(monitor, &mut mi) != 0 {
+        mi.rcWork
+    } else {
+        let mut rc = RECT { left: 0, top: 0, right: 0, bottom: 0 };
+        SystemParametersInfoW(SPI_GETWORKAREA, 0, &mut rc as *mut _ as *mut _, 0);
+        rc
+    }
 }
 
 pub unsafe fn register_pet_class(hinstance: HMODULE) -> u16 {
@@ -495,6 +507,10 @@ pub unsafe extern "system" fn pet_wndproc(
                         // Click / Pet: mascot does a joyful hop with happy ^^ eyes and floating hearts!
                         state.animator.pet();
                         state.spawn_pet_hearts();
+                        if state.animator.pet_combo >= 2 {
+                            state.spawn_single_heart();
+                            state.spawn_single_heart();
+                        }
                         state.set_fps_profile(true);
                         state.render_and_present();
                     }
@@ -547,7 +563,7 @@ pub unsafe extern "system" fn pet_wndproc(
                 let dt = now.duration_since(state.last_tick);
                 state.last_tick = now;
 
-                let work_area = get_desktop_work_area();
+                let work_area = get_desktop_work_area_for_hwnd(state.hwnd);
                 let dt_sec = dt.as_secs_f32().min(0.05);
 
                 // Update floating hearts
@@ -651,6 +667,15 @@ pub unsafe extern "system" fn pet_wndproc(
                         state.animator.play(AnimId::Celebrate);
                         state.spawn_single_heart();
                     }
+
+                    // Interactive close wave / claw boop when cursor hovers right beside Claude
+                    if dist_cursor <= 65.0
+                        && state.animator.current_anim == AnimId::Rest
+                        && !state.physics.is_active()
+                        && !state.is_dragging
+                    {
+                        state.animator.play(AnimId::Wave);
+                    }
                     state.was_near_cursor = true;
                 } else {
                     state.was_near_cursor = false;
@@ -667,12 +692,11 @@ pub unsafe extern "system" fn pet_wndproc(
                     && state.animator.test_override.is_none()
                     && !state.is_dragging
                     && !state.physics.is_active()
+                    && state.last_hook_time.elapsed().as_secs() >= 15
                 {
-                    if state.last_hook_time.elapsed().as_secs() >= 15 {
-                        state.animator.apply_feed_state(MascotState::Idle);
-                        let s_path = state_path();
-                        let _ = std::fs::write(&s_path, r#"{"state":"idle","mood":"neutral","label":"Idle"}"#);
-                    }
+                    state.animator.apply_feed_state(MascotState::Idle);
+                    let s_path = state_path();
+                    let _ = std::fs::write(&s_path, r#"{"state":"idle","mood":"neutral","label":"Idle"}"#);
                 }
 
                 // 2. Physics Controller (VS Code Pet Flight & Fling Mode)
@@ -698,7 +722,8 @@ pub unsafe extern "system" fn pet_wndproc(
                         state.wanderer.mode = crate::wander::WanderMode::RestingAtHome;
                         state.animator.feed_state = MascotState::Idle;
                         state.animator.test_override = None;
-                        state.animator.play(AnimId::Rest);
+                        state.animator.play(AnimId::Celebrate);
+                        state.spawn_single_heart();
                         let s_path = state_path();
                         let _ = std::fs::write(&s_path, r#"{"state":"idle","mood":"neutral","label":"Idle"}"#);
                         state.save_current_config();
@@ -938,16 +963,19 @@ unsafe fn handle_context_command(state: &mut AppState, cmd: usize) {
         IDM_DROP_SNACK => {
             let mut pt = POINT { x: 0, y: 0 };
             GetCursorPos(&mut pt);
+            let snack_kinds = [SnackKind::Cookie, SnackKind::Cake, SnackKind::Pizza, SnackKind::Apple];
+            let kind_idx = (Instant::now().elapsed().as_nanos() as usize) % snack_kinds.len();
             state.snack = Some(SnackItem {
                 x: pt.x,
                 y: pt.y,
+                kind: snack_kinds[kind_idx],
                 spawned: Instant::now(),
                 eaten: false,
             });
             state.animator.play(AnimId::Alert);
             state.spawn_single_heart();
 
-            let work_area = get_desktop_work_area();
+            let work_area = get_desktop_work_area_for_hwnd(state.hwnd);
             let target_x = (pt.x - state.framebuffer.width / 2)
                 .clamp(work_area.left, work_area.right - state.framebuffer.width);
             let target_y = (pt.y - state.framebuffer.height / 2)
@@ -957,7 +985,7 @@ unsafe fn handle_context_command(state: &mut AppState, cmd: usize) {
             state.render_and_present();
         }
         IDM_WANDER_NOW => {
-            let work_area = get_desktop_work_area();
+            let work_area = get_desktop_work_area_for_hwnd(state.hwnd);
             state.wanderer.trigger_wander_now(&work_area, state.framebuffer.width, state.framebuffer.height);
             state.set_fps_profile(true);
         }
@@ -1009,7 +1037,7 @@ enum Corner {
 }
 
 unsafe fn dock_to_corner(state: &mut AppState, corner: Corner) {
-    let work_area = get_desktop_work_area();
+    let work_area = get_desktop_work_area_for_hwnd(state.hwnd);
     let w = state.framebuffer.width;
     let h = state.framebuffer.height;
     const PADDING: i32 = 0; // Reach exact screen corners

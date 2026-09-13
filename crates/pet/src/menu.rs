@@ -56,6 +56,7 @@ fn wide_str(s: &str) -> Vec<u16> {
 }
 
 /// Displays the native Win32 context popup menu and returns the selected command ID (or 0 if dismissed).
+#[allow(clippy::too_many_arguments)]
 pub unsafe fn show_context_menu(
     hwnd: HWND,
     x: i32,

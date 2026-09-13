@@ -67,15 +67,15 @@ impl PhysicsController {
         self.mode = PhysicsMode::Fling;
         self.x = cur_x as f32;
         self.y = cur_y as f32;
-        // Clamp velocity to reasonable physics bounds
-        self.vx = vx.clamp(-35.0, 35.0);
-        self.vy = vy.clamp(-35.0, 35.0);
+        // Clamp velocity to smooth, natural throwing bounds
+        self.vx = vx.clamp(-26.0, 26.0);
+        self.vy = vy.clamp(-28.0, 20.0);
         self.facing = if self.vx >= 0.0 { 1 } else { -1 };
         self.original_hat = current_hat;
-        self.flight_hat = Some(HatType::Helicopter);
+        self.flight_hat = None; // Keep mascot's current hat when thrown
         self.start_time = now;
         self.last_step = now;
-        self.flight_duration = Duration::from_millis(5000);
+        self.flight_duration = Duration::from_millis(4500);
         self.bounces = 0;
         self.wobble_phase = 0.0;
     }
@@ -86,16 +86,16 @@ impl PhysicsController {
         self.mode = PhysicsMode::EasterEggFlight;
         self.x = cur_x as f32;
         self.y = cur_y as f32;
-        // Launch up and outward toward the screen center
+        // Launch up and outward toward screen center
         let dir = if cur_x > 900 { -1.0 } else { 1.0 };
-        self.vx = dir * 18.0;
-        self.vy = -16.0;
+        self.vx = dir * 14.0;
+        self.vy = -14.0;
         self.facing = if self.vx >= 0.0 { 1 } else { -1 };
         self.original_hat = current_hat;
         self.flight_hat = Some(HatType::Helicopter);
         self.start_time = now;
         self.last_step = now;
-        self.flight_duration = Duration::from_millis(9000);
+        self.flight_duration = Duration::from_millis(8000);
         self.bounces = 0;
         self.wobble_phase = 0.0;
     }
@@ -114,7 +114,7 @@ impl PhysicsController {
         }
 
         let now = Instant::now();
-        let dt_sec = now.duration_since(self.last_step).as_secs_f32().min(0.1);
+        let dt_sec = now.duration_since(self.last_step).as_secs_f32().min(0.08);
         self.last_step = now;
 
         let elapsed = now.duration_since(self.start_time);
@@ -128,26 +128,86 @@ impl PhysicsController {
         match self.mode {
             PhysicsMode::Inactive => None,
 
-            PhysicsMode::Fling | PhysicsMode::EasterEggFlight => {
-                // Apply flight forces
-                if self.mode == PhysicsMode::Fling {
-                    // Slight gravity for realistic toss arc
-                    self.vy += 22.0 * dt_sec;
-                    // Air friction damping
-                    self.vx *= 0.985;
-                    self.vy *= 0.985;
-                } else {
-                    // Easter egg flight: buoyant helicopter thrust
-                    self.vx *= 0.992;
-                    // Gentle vertical sinusoidal buoyancy
-                    self.vy += (self.wobble_phase.sin() * 8.0) * dt_sec;
-                    self.vy *= 0.988;
-                }
+            PhysicsMode::Fling => {
+                // Natural toss kinematics: snappy gravity + air drag
+                self.vy += 32.0 * dt_sec;
+                self.vx *= 0.992;
 
                 self.x += self.vx * (dt_sec * 60.0);
                 self.y += self.vy * (dt_sec * 60.0);
 
-                // Elastic wall collisions
+                // Side walls bounce
+                if self.x <= min_x {
+                    self.x = min_x;
+                    self.vx = -self.vx * 0.60;
+                    self.facing = 1;
+                    self.bounces += 1;
+                } else if self.x >= max_x {
+                    self.x = max_x;
+                    self.vx = -self.vx * 0.60;
+                    self.facing = -1;
+                    self.bounces += 1;
+                }
+
+                // Ceiling bounce
+                if self.y <= min_y {
+                    self.y = min_y;
+                    self.vy = -self.vy * 0.55;
+                    self.bounces += 1;
+                }
+
+                // Floor collision / settle with realistic sliding
+                if self.y >= max_y {
+                    self.y = max_y;
+                    if self.vy > 2.0 && self.bounces < 4 {
+                        self.vy = -self.vy * 0.45;
+                        self.vx *= 0.70;
+                        self.bounces += 1;
+                    } else {
+                        // Smooth rolling slide along the floor
+                        self.vx *= 0.82;
+                        self.vy = 0.0;
+                        if self.vx.abs() < 0.4 || elapsed >= self.flight_duration {
+                            // Settled gently on the floor!
+                            self.mode = PhysicsMode::Inactive;
+                            self.home_x = self.x.round() as i32;
+                            self.home_y = self.y.round() as i32;
+                            return Some((
+                                self.home_x,
+                                self.home_y,
+                                self.facing,
+                                AnimId::Celebrate,
+                                Some(self.original_hat),
+                            ));
+                        }
+                    }
+                }
+
+                if self.vx.abs() > 0.3 {
+                    self.facing = if self.vx > 0.0 { 1 } else { -1 };
+                }
+
+                if elapsed >= self.flight_duration {
+                    self.mode = PhysicsMode::Inactive;
+                    self.y = self.y.min(max_y);
+                    self.home_x = self.x.round() as i32;
+                    self.home_y = self.y.round() as i32;
+                    return Some((self.home_x, self.home_y, self.facing, AnimId::Celebrate, Some(self.original_hat)));
+                }
+
+                // Airborne flailing pose
+                Some((self.x.round() as i32, self.y.round() as i32, self.facing, AnimId::Panic, self.flight_hat))
+            }
+
+            PhysicsMode::EasterEggFlight => {
+                // Easter egg helicopter flight: buoyant floating trajectory
+                self.vx *= 0.994;
+                self.vy += (self.wobble_phase.sin() * 7.5) * dt_sec;
+                self.vy *= 0.990;
+
+                self.x += self.vx * (dt_sec * 60.0);
+                self.y += self.vy * (dt_sec * 60.0);
+
                 let elasticity = 0.82;
                 if self.x <= min_x {
                     self.x = min_x;
@@ -175,29 +235,20 @@ impl PhysicsController {
                     self.facing = if self.vx > 0.0 { 1 } else { -1 };
                 }
 
-                // Check transition to Landing
-                let total_speed = (self.vx * self.vx + self.vy * self.vy).sqrt();
-                if elapsed >= self.flight_duration || (self.mode == PhysicsMode::Fling && total_speed < 1.2 && elapsed.as_millis() > 1200) {
+                if elapsed >= self.flight_duration {
                     self.mode = PhysicsMode::Landing;
                 }
 
-                let anim = if self.mode == PhysicsMode::Fling && self.bounces == 0 {
-                    AnimId::Panic
-                } else {
-                    AnimId::Celebrate
-                };
-
-                Some((self.x.round() as i32, self.y.round() as i32, self.facing, anim, self.flight_hat))
+                Some((self.x.round() as i32, self.y.round() as i32, self.facing, AnimId::Celebrate, self.flight_hat))
             }
 
             PhysicsMode::Landing => {
-                // Smooth homing glide back to (home_x, home_y)
+                // Smooth glide back to (home_x, home_y)
                 let dx = self.home_x as f32 - self.x;
                 let dy = self.home_y as f32 - self.y;
                 let dist = (dx * dx + dy * dy).sqrt();
 
                 if dist <= 6.0 {
-                    // Arrived home! Land with happy celebration
                     self.x = self.home_x as f32;
                     self.y = self.home_y as f32;
                     self.mode = PhysicsMode::Inactive;
@@ -210,7 +261,6 @@ impl PhysicsController {
                     ));
                 }
 
-                // Glide towards home at 7 px/frame
                 let speed = 7.5f32;
                 self.x += (dx / dist) * speed;
                 self.y += (dy / dist) * speed;
@@ -242,7 +292,7 @@ mod tests {
         assert_eq!(pc.mode, PhysicsMode::Fling);
         assert_eq!(pc.facing, 1);
         assert_eq!(pc.original_hat, HatType::Top);
-        assert_eq!(pc.flight_hat, Some(HatType::Helicopter));
+        assert_eq!(pc.flight_hat, None);
     }
 
     #[test]

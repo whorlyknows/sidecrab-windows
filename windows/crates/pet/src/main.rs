@@ -86,12 +86,20 @@ fn main() {
             last_trim: now - std::time::Duration::from_secs(10),
             is_active_fps: true,
             is_dragging: false,
+            is_mouse_down: false,
             drag_start_cursor: POINT { x: 0, y: 0 },
             drag_start_win: POINT { x: cfg.x, y: cfg.y },
             last_mouse_pos: POINT { x: 0, y: 0 },
             last_mouse_time: now,
             mouse_velocity: (0.0, 0.0),
             last_hook_time: now,
+            hearts: Vec::new(),
+            last_relax_heart: now,
+            zzz_particles: Vec::new(),
+            last_zzz_spawn: now,
+            snack: None,
+            was_near_cursor: false,
+            initial_trim_count: 0,
         });
 
         let state_raw = Box::into_raw(state);
@@ -99,7 +107,7 @@ fn main() {
 
         // 5. Initial render and presentation
         (*state_raw).render_and_present();
-        SetTimer(hwnd, TIMER_ANIM_ID, 50, None); // 20 FPS smooth active timer
+        SetTimer(hwnd, TIMER_ANIM_ID, 16, None); // 60 FPS smooth active timer
 
         // 6. Start background IPC watcher
         start_state_watcher(hwnd as isize);

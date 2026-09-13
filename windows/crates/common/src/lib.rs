@@ -19,6 +19,7 @@ mod tests {
         assert_eq!(PALETTE_BGRA[6], [87, 119, 217, 255]); // Coral (#d97757 in BGRA)
         assert_eq!(COLOR_BUBBLE_BGRA, [220, 231, 242, 255]);
         assert_eq!(COLOR_TYPING_DOTS_BGRA, [116, 107, 107, 255]);
+        assert_eq!(COLOR_HEART_BGRA, [119, 59, 255, 255]);
 
         assert_eq!(hat_color_bgra('k'), Some([34, 28, 29, 255]));
         assert_eq!(hat_color_bgra('w'), Some([233, 239, 242, 255]));

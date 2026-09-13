@@ -134,15 +134,9 @@ impl LayeredFrameBuffer {
         if self.width == width && self.height == height && self.scale == scale {
             return;
         }
-        self.destroy();
-        let new_fb = Self::new(width, height, scale);
-        self.mem_dc = new_fb.mem_dc;
-        self.hbitmap = new_fb.hbitmap;
-        self.old_bitmap = new_fb.old_bitmap;
-        self.bits = new_fb.bits;
-        self.width = new_fb.width;
-        self.height = new_fb.height;
-        self.scale = new_fb.scale;
+        let mut new_fb = Self::new(width, height, scale);
+        std::mem::swap(self, &mut new_fb);
+        // `new_fb` now holds the old framebuffer and will drop/destroy the old GDI handles cleanly.
     }
 
     pub unsafe fn destroy(&mut self) {

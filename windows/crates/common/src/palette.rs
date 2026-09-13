@@ -23,6 +23,9 @@ pub const COLOR_BUBBLE_BGRA: [u8; 4] = [220, 231, 242, 255];
 /// Overlay color for typing dots inside thought bubble: #6b6b74
 pub const COLOR_TYPING_DOTS_BGRA: [u8; 4] = [116, 107, 107, 255];
 
+/// Overlay color for floating pixel hearts: #ff3b77 (vibrant pink BGRA)
+pub const COLOR_HEART_BGRA: [u8; 4] = [119, 59, 255, 255];
+
 /// Hat colors map (BGRA pre-multiplied):
 /// - 'k': #1d1c22 (black)
 /// - 'b': #7a4a28 (hat band brown)

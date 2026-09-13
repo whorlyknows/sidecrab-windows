@@ -330,7 +330,7 @@ function Start-PetProcess {
 
     $proc = [System.Diagnostics.Process]::Start($psi)
     $script:SpawnedProcesses += $proc
-    Start-Sleep -Milliseconds 400
+    Start-Sleep -Milliseconds 600
     return $proc
 }
 

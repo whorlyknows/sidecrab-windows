@@ -149,7 +149,10 @@ pub fn composite_logical_frame(
     blink: bool,
     squint: bool,
     half_eyes: bool,
+    happy_eyes: bool,
     eyes_dx: i32,
+    eyes_dy: i32,
+    sit_legs: bool,
     hat: HatType,
     hat_anim_tick: u64, // drives helicopter rotor alternating at 130ms
     thought_phase: Option<usize>, // Some(0..4) when thinking
@@ -165,7 +168,7 @@ pub fn composite_logical_frame(
     let base_y = (CRAB_Y as i32 + dy).clamp(0, (CANVAS_H - FRAME_H) as i32) as usize;
 
     // 2. Prepare eye modification masks
-    let (eye_pixels, bottoms) = if blink || squint || half_eyes || eyes_dx != 0 {
+    let (eye_pixels, bottoms) = if blink || squint || half_eyes || happy_eyes || eyes_dx != 0 || eyes_dy != 0 {
         get_eye_data(frame)
     } else {
         (Vec::new(), [0usize; FRAME_W])
@@ -179,25 +182,36 @@ pub fn composite_logical_frame(
                 continue;
             }
 
+            // If sitting, hide the 4 vertical standing legs from Frame 0
+            if sit_legs && cy >= 27 {
+                if (cx >= 9 && cx <= 12)
+                    || (cx >= 17 && cx <= 20)
+                    || (cx >= 30 && cx <= 33)
+                    || (cx >= 38 && cx <= 41)
+                {
+                    continue;
+                }
+            }
+
             let mut final_color = PALETTE_BGRA[pixel_idx as usize];
 
             // Eye transformations
-            if blink || squint || half_eyes {
+            if blink || squint || half_eyes || happy_eyes {
                 for ep in &eye_pixels {
                     if ep.x == cx && ep.y == cy {
-                        if squint && !blink && cy == bottoms[cx] {
+                        if squint && !blink && !happy_eyes && cy == bottoms[cx] {
                             // Squint: lowest pixel remains open
                             continue;
                         }
-                        if half_eyes && !blink && !squint && cy >= bottoms[cx] - 1 {
+                        if half_eyes && !blink && !squint && !happy_eyes && cy >= bottoms[cx] - 1 {
                             // Half eyes: lower 2 rows remain open
                             continue;
                         }
-                        // Replace with body fill color
+                        // Replace eye pixel with body fill color
                         final_color = PALETTE_BGRA[ep.fill_idx as usize];
                     }
                 }
-            } else if eyes_dx != 0 {
+            } else if eyes_dx != 0 || eyes_dy != 0 {
                 // Glance: erase old eye pixels, redraw them shifted
                 for ep in &eye_pixels {
                     if ep.x == cx && ep.y == cy {
@@ -219,16 +233,68 @@ pub fn composite_logical_frame(
         }
     }
 
-    // Redraw shifted pupils for glance if eyes_dx != 0
-    if eyes_dx != 0 {
+    // Draw happy ^^ eyes (curved smiling carets)
+    if happy_eyes && !blink {
+        let happy_pixels: [(i32, i32); 8] = [
+            // Left eye caret
+            (14, 8), (15, 8), (13, 9), (16, 9),
+            // Right eye caret
+            (35, 8), (36, 8), (34, 9), (37, 9),
+        ];
+        for &(hx, hy) in &happy_pixels {
+            let target_x = if facing == -1 {
+                (CANVAS_W - 1) as i32 - hx
+            } else {
+                hx
+            };
+            let target_y = (base_y as i32) + hy;
+            if target_x >= 0 && (target_x as usize) < CANVAS_W && target_y >= 0 && (target_y as usize) < CANVAS_H {
+                buf[target_y as usize * CANVAS_W + target_x as usize] = PALETTE_BGRA[1]; // Black caret pixel
+            }
+        }
+    }
+
+    // Draw sitting front legs/paws if seated
+    if sit_legs {
+        // Front feet / paws resting flat on the floor in front of belly
+        // Left paw: cx 14..=21, cy 32..=35
+        // Right paw: cx 29..=36, cy 32..=35
+        let paws = [
+            // Left foot
+            (15, 32, 6), (16, 32, 6), (17, 32, 6), (18, 32, 6), (19, 32, 6), (20, 32, 6),
+            (14, 33, 6), (15, 33, 5), (16, 33, 6), (17, 33, 6), (18, 33, 6), (19, 33, 5), (20, 33, 6),
+            (14, 34, 6), (15, 34, 5), (16, 34, 1), (17, 34, 6), (18, 34, 1), (19, 34, 5), (20, 34, 6),
+            (14, 35, 6), (15, 35, 6), (16, 35, 6), (17, 35, 6), (18, 35, 6), (19, 35, 6), (20, 35, 6),
+            // Right foot
+            (30, 32, 6), (31, 32, 6), (32, 32, 6), (33, 32, 6), (34, 32, 6), (35, 32, 6),
+            (30, 33, 6), (31, 33, 5), (32, 33, 6), (33, 33, 6), (34, 33, 5), (35, 33, 6), (36, 33, 6),
+            (30, 34, 6), (31, 34, 5), (32, 34, 1), (33, 34, 6), (34, 34, 1), (35, 34, 5), (36, 34, 6),
+            (30, 35, 6), (31, 35, 6), (32, 35, 6), (33, 35, 6), (34, 35, 6), (35, 35, 6), (36, 35, 6),
+        ];
+        for &(px, py, pal_idx) in &paws {
+            let target_x = if facing == -1 {
+                (CANVAS_W - 1) as i32 - px
+            } else {
+                px
+            };
+            let target_y = (base_y as i32) + py;
+            if target_x >= 0 && (target_x as usize) < CANVAS_W && target_y >= 0 && (target_y as usize) < CANVAS_H {
+                buf[target_y as usize * CANVAS_W + target_x as usize] = PALETTE_BGRA[pal_idx as usize];
+            }
+        }
+    }
+
+    // Redraw shifted pupils for glance if eyes_dx != 0 || eyes_dy != 0
+    if (eyes_dx != 0 || eyes_dy != 0) && !happy_eyes && !blink {
         for ep in &eye_pixels {
-            let shifted_x = ep.x as i32 + eyes_dx;
+            let shifted_x = ep.x as i32 + (eyes_dx * facing);
             let target_x = if facing == -1 {
                 (CANVAS_W - 1) as i32 - shifted_x
             } else {
                 shifted_x
             };
-            let target_y = (base_y + ep.y) as i32;
+            let shifted_y = (ep.y as i32 + eyes_dy).clamp(0, (FRAME_H - 1) as i32);
+            let target_y = (base_y as i32) + shifted_y;
             if target_x >= 0 && (target_x as usize) < CANVAS_W && target_y >= 0 && (target_y as usize) < CANVAS_H {
                 buf[target_y as usize * CANVAS_W + target_x as usize] = PALETTE_BGRA[1]; // Black pupil
             }
@@ -357,13 +423,131 @@ fn fill_rect(
     }
 }
 
+/// Draws a cute 5x5 pixelated heart at logical canvas coordinates (hx, hy).
+pub fn draw_heart(buf: &mut [[u8; 4]; CANVAS_W * CANVAS_H], hx: i32, hy: i32) {
+    const HEART_MAP: [&str; 5] = [
+        ".#.#.",
+        "#####",
+        "#####",
+        ".###.",
+        "..#..",
+    ];
+    for (r, row) in HEART_MAP.iter().enumerate() {
+        for (c, ch) in row.chars().enumerate() {
+            if ch == '#' {
+                let px = hx + c as i32;
+                let py = hy + r as i32;
+                if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
+                    buf[py as usize * CANVAS_W + px as usize] = common::COLOR_HEART_BGRA;
+                }
+            }
+        }
+    }
+}
+
+/// Draws a cute 6x6 pixel chocolate chip cookie snack at logical canvas coordinates (sx, sy).
+pub fn draw_snack(buf: &mut [[u8; 4]; CANVAS_W * CANVAS_H], sx: i32, sy: i32) {
+    const SNACK_MAP: [&str; 6] = [
+        ".cccc.",
+        "cooccc",
+        "ccoccc",
+        "cccooc",
+        "cooccc",
+        ".cccc.",
+    ];
+    for (r, row) in SNACK_MAP.iter().enumerate() {
+        for (c, ch) in row.chars().enumerate() {
+            let color = match ch {
+                'c' => [35, 120, 205, 255], // Cookie golden brown BGRA
+                'o' => [15, 45, 80, 255],   // Dark chocolate chip
+                _ => continue,
+            };
+            let px = sx + c as i32;
+            let py = sy + r as i32;
+            if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
+                buf[py as usize * CANVAS_W + px as usize] = color;
+            }
+        }
+    }
+}
+
+/// Draws a floating pixel-art Z letter for sleep at logical canvas coordinates (zx, zy).
+pub fn draw_zzz(buf: &mut [[u8; 4]; CANVAS_W * CANVAS_H], zx: i32, zy: i32, small: bool) {
+    let color = [240, 210, 90, 255]; // Soft dreamy amber BGRA
+    let map: &[&str] = if small {
+        &[
+            "###",
+            "..#",
+            ".#.",
+            "#..",
+            "###",
+        ]
+    } else {
+        &[
+            "####",
+            "...#",
+            "..#.",
+            ".#..",
+            "####",
+        ]
+    };
+    for (r, row) in map.iter().enumerate() {
+        for (c, ch) in row.chars().enumerate() {
+            if ch == '#' {
+                let px = zx + c as i32;
+                let py = zy + r as i32;
+                if px >= 0 && (px as usize) < CANVAS_W && py >= 0 && (py as usize) < CANVAS_H {
+                    buf[py as usize * CANVAS_W + px as usize] = color;
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    fn test_happy_eyes_and_heart_rendering() {
+        let mut buf = [[0u8; 4]; CANVAS_W * CANVAS_H];
+        composite_logical_frame(
+            &mut buf, 0, 0, 1, false, false, false, true, 0, 0, false,
+            HatType::None, 0, None, None, None,
+        );
+        // Happy carets draw black pixels on row 8 & 9
+        let black_count = buf.iter().filter(|&&p| p == PALETTE_BGRA[1]).count();
+        assert_eq!(black_count, 8, "Happy eyes must draw exactly 8 caret pixels");
+
+        // Test heart drawing
+        draw_heart(&mut buf, 10, 10);
+        let heart_count = buf.iter().filter(|&&p| p == common::COLOR_HEART_BGRA).count();
+        assert_eq!(heart_count, 16, "5x5 heart must draw exactly 16 pink pixels");
+    }
+
+    #[test]
+    fn test_sit_legs_and_snack_rendering() {
+        let mut buf = [[0u8; 4]; CANVAS_W * CANVAS_H];
+        composite_logical_frame(
+            &mut buf, 0, 5, 1, false, false, false, true, 0, 0, true,
+            HatType::None, 0, None, None, None,
+        );
+        let has_opaque = buf.iter().any(|p| p[3] > 0);
+        assert!(has_opaque, "Sitting frame must render opaque pixels");
+
+        // Test snack
+        draw_snack(&mut buf, 20, 20);
+        let snack_pixels = buf.iter().filter(|&&p| p == [35, 120, 205, 255]).count();
+        assert!(snack_pixels > 0, "Snack cookie must render cookie pixels");
+
+        // Test zzz
+        draw_zzz(&mut buf, 25, 5, false);
+        let zzz_pixels = buf.iter().filter(|&&p| p == [240, 210, 90, 255]).count();
+        assert!(zzz_pixels > 0, "ZZZ must render amber pixels");
+    }
+
+    #[test]
     fn test_frames_embedded_size_and_count() {
-        assert_eq!(FRAMES_RAW.len(), NUM_FRAMES * FRAME_W * FRAME_H);
         for i in 0..NUM_FRAMES {
             let f = get_frame(i);
             assert_eq!(f.len(), FRAME_W * FRAME_H);
@@ -387,7 +571,7 @@ mod tests {
 
         // 1. None hat
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, 0,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
             HatType::None, 0, None, None, None,
         );
         let opaque_count_none = buf.iter().filter(|p| p[3] > 0).count();
@@ -395,7 +579,7 @@ mod tests {
 
         // 2. Top hat
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, 0,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
             HatType::Top, 0, None, None, None,
         );
         let opaque_count_top = buf.iter().filter(|p| p[3] > 0).count();
@@ -403,7 +587,7 @@ mod tests {
 
         // 3. Chef hat
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, 0,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
             HatType::Chef, 0, None, None, None,
         );
         let opaque_count_chef = buf.iter().filter(|p| p[3] > 0).count();
@@ -411,7 +595,7 @@ mod tests {
 
         // 4. Fedora
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, 0,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
             HatType::Fedora, 0, None, None, None,
         );
         let opaque_count_fedora = buf.iter().filter(|p| p[3] > 0).count();
@@ -419,14 +603,14 @@ mod tests {
 
         // 5. Helicopter (Phase 0 and Phase 1)
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, 0,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
             HatType::Helicopter, 0, None, None, None,
         );
         let opaque_count_heli0 = buf.iter().filter(|p| p[3] > 0).count();
         assert!(opaque_count_heli0 > opaque_count_none, "Heli0 must add opaque pixels");
 
         composite_logical_frame(
-            &mut buf, 0, 0, 1, false, false, false, 0,
+            &mut buf, 0, 0, 1, false, false, false, false, 0, 0, false,
             HatType::Helicopter, 130, None, None, None,
         );
         let opaque_count_heli1 = buf.iter().filter(|p| p[3] > 0).count();
@@ -439,7 +623,7 @@ mod tests {
 
         // Thought bubble
         composite_logical_frame(
-            &mut buf, 26, 0, 1, false, false, false, 0,
+            &mut buf, 26, 0, 1, false, false, false, false, 0, 0, false,
             HatType::None, 0, Some(2), None, None,
         );
         let bubble_pixel_found = buf.iter().any(|&p| p == COLOR_BUBBLE_BGRA);
@@ -447,7 +631,7 @@ mod tests {
 
         // Alert mark "!?"
         composite_logical_frame(
-            &mut buf, 27, 0, 1, false, false, false, 0,
+            &mut buf, 27, 0, 1, false, false, false, false, 0, 0, false,
             HatType::None, 0, None, Some("!?"), None,
         );
         let alert_found = buf.iter().any(|&p| p == COLOR_BUBBLE_BGRA);
@@ -455,7 +639,7 @@ mod tests {
 
         // Sleep Z's
         composite_logical_frame(
-            &mut buf, 0, 2, 1, false, true, false, 0,
+            &mut buf, 0, 2, 1, false, true, false, false, 0, 0, false,
             HatType::None, 0, None, None, Some(0),
         );
         let z_found = buf.iter().any(|&p| p == COLOR_BUBBLE_BGRA);

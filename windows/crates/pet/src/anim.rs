@@ -10,7 +10,11 @@ pub struct AnimStep {
     pub blink: bool,
     pub squint: bool,
     pub half_eyes: bool,
+    pub happy_eyes: bool,
     pub eyes_dx: i32,
+    pub eyes_dy: i32,
+    pub sit_legs: bool,
+    pub facing_override: Option<i32>,
     pub mark: Option<&'static str>,
     pub zzz: Option<u8>,
 }
@@ -24,11 +28,26 @@ impl AnimStep {
             blink: false,
             squint: false,
             half_eyes: false,
+            happy_eyes: false,
             eyes_dx: 0,
+            eyes_dy: 0,
+            sit_legs: false,
+            facing_override: None,
             mark: None,
             zzz: None,
         }
     }
+
+    pub const fn with_dy(mut self, dy: i32) -> Self { self.dy = dy; self }
+    pub const fn with_blink(mut self) -> Self { self.blink = true; self }
+    pub const fn with_squint(mut self) -> Self { self.squint = true; self }
+    pub const fn with_half_eyes(mut self) -> Self { self.half_eyes = true; self }
+    pub const fn with_happy_eyes(mut self) -> Self { self.happy_eyes = true; self }
+    pub const fn with_eyes(mut self, dx: i32, dy: i32) -> Self { self.eyes_dx = dx; self.eyes_dy = dy; self }
+    pub const fn with_sit_legs(mut self) -> Self { self.sit_legs = true; self }
+    pub const fn with_facing(mut self, facing: i32) -> Self { self.facing_override = Some(facing); self }
+    pub const fn with_mark(mut self, mark: &'static str) -> Self { self.mark = Some(mark); self }
+    pub const fn with_zzz(mut self, zzz: u8) -> Self { self.zzz = Some(zzz); self }
 }
 
 /// Identifiers for all mascot animation states.
@@ -36,6 +55,7 @@ impl AnimStep {
 #[allow(dead_code)]
 pub enum AnimId {
     Rest,
+    Relax,
     Blink,
     Shuffle,
     Stretch,
@@ -56,6 +76,7 @@ pub enum AnimId {
     Glare,
     Chase,
     Sleep,
+    Eat,
 }
 
 impl AnimId {
@@ -66,7 +87,10 @@ impl AnimId {
             | AnimId::Stretch
             | AnimId::Peek
             | AnimId::Look
-            | AnimId::Wave => false,
+            | AnimId::Wave
+            | AnimId::Celebrate
+            | AnimId::Relax
+            | AnimId::Eat => false,
             _ => true,
         }
     }
@@ -84,6 +108,8 @@ pub struct AnimationController {
     pub hovering: bool,
     pub traveling: bool,
     pub sleeping: bool,
+    pub cursor_eye_dx: i32,
+    pub cursor_eye_dy: i32,
 
     step_elapsed: Duration,
     total_elapsed_ms: u64,
@@ -113,6 +139,8 @@ impl AnimationController {
             hovering: false,
             traveling: false,
             sleeping: false,
+            cursor_eye_dx: 0,
+            cursor_eye_dy: 0,
             step_elapsed: Duration::ZERO,
             total_elapsed_ms: 0,
             idle_since: now,
@@ -248,8 +276,12 @@ impl AnimationController {
                 AnimId::Hover
             };
             self.play(hover_anim);
-        } else if !self.traveling {
-            self.reapply_state();
+        } else {
+            self.cursor_eye_dx = 0;
+            self.cursor_eye_dy = 0;
+            if !self.traveling {
+                self.reapply_state();
+            }
         }
     }
 
@@ -275,10 +307,11 @@ impl AnimationController {
         self.total_elapsed_ms += dt_ms;
         self.step_elapsed += dt;
 
-        // Check celebrate decay
+        // Check celebrate decay -> reset to idle so it doesn't loop celebrate forever
         if let Some(decay) = self.celebrate_decay_ms {
             if self.total_elapsed_ms >= decay {
                 self.celebrate_decay_ms = None;
+                self.feed_state = MascotState::Idle;
                 if !self.hovering && !self.traveling {
                     self.reapply_state();
                 }
@@ -289,7 +322,9 @@ impl AnimationController {
         if let Some(decay) = self.pet_decay_ms {
             if self.total_elapsed_ms >= decay {
                 self.pet_decay_ms = None;
-                if !self.hovering && !self.traveling {
+                if self.hovering {
+                    self.play(AnimId::Hover);
+                } else if !self.traveling {
                     self.reapply_state();
                 }
             }
@@ -302,18 +337,23 @@ impl AnimationController {
                 self.sleeping = true;
                 self.play(AnimId::Sleep);
             } else if self.total_elapsed_ms >= self.next_micro_ms {
-                // Trigger micro-life
+                // Trigger micro-life across fun standing mascot animations
                 let micros = [
-                    AnimId::Look,
                     AnimId::Look,
                     AnimId::Shuffle,
                     AnimId::Stretch,
                     AnimId::Peek,
                     AnimId::Wave,
+                    AnimId::Celebrate,
+                    AnimId::Think,
+                    AnimId::Work,
+                    AnimId::Alert,
+                    AnimId::Glare,
+                    AnimId::Chase,
                 ];
                 let idx = (self.pseudo_rand() as usize) % micros.len();
                 self.play(micros[idx]);
-                self.next_micro_ms = self.total_elapsed_ms + self.rand_range(3000, 9000);
+                self.next_micro_ms = self.total_elapsed_ms + self.rand_range(4000, 7000);
             }
         }
 
@@ -324,16 +364,25 @@ impl AnimationController {
             self.step_elapsed = Duration::ZERO;
         }
 
+        // Apply facing override if step specifies one
+        if let Some(fo) = steps[self.step_index].facing_override {
+            self.facing = fo;
+        }
+
         let current_step_duration = Duration::from_millis(steps[self.step_index].duration_ms);
         if self.step_elapsed >= current_step_duration {
             self.step_elapsed -= current_step_duration;
             self.step_index += 1;
             if self.step_index >= steps.len() {
-                if self.current_anim.is_looping() {
+                if self.current_anim.is_looping() || self.test_override.is_some() {
                     self.step_index = 0;
                 } else {
-                    // Micro-idle finished -> return to Rest
-                    self.play(AnimId::Rest);
+                    // Non-looping finished -> return to Hover if hovering, else Rest
+                    if self.hovering {
+                        self.play(AnimId::Hover);
+                    } else {
+                        self.play(AnimId::Rest);
+                    }
                 }
             }
         }
@@ -342,11 +391,19 @@ impl AnimationController {
     /// Returns the current step and ambient flags to render.
     pub fn current_render_step(&mut self) -> (AnimStep, bool, Option<usize>) {
         let steps = self.get_steps(self.current_anim);
-        let step = steps[self.step_index.min(steps.len() - 1)];
+        let mut step = steps[self.step_index.min(steps.len() - 1)];
+
+        // Pupil tracking towards cursor in 2D
+        if self.cursor_eye_dx != 0 && !step.blink && !step.squint && step.eyes_dx == 0 {
+            step.eyes_dx = self.cursor_eye_dx;
+        }
+        if self.cursor_eye_dy != 0 && !step.blink && !step.squint && step.eyes_dy == 0 {
+            step.eyes_dy = self.cursor_eye_dy;
+        }
 
         // Ambient blink check
         let mut ambient_blink = false;
-        if !step.blink && !step.squint && !step.half_eyes && step.eyes_dx == 0 {
+        if !step.blink && !step.squint && !step.half_eyes && step.eyes_dx == 0 && step.eyes_dy == 0 {
             if self.total_elapsed_ms >= self.next_blink_ms {
                 if self.total_elapsed_ms < self.next_blink_ms + 140 {
                     ambient_blink = true;
@@ -374,6 +431,7 @@ impl AnimationController {
     fn get_steps(&self, anim: AnimId) -> &'static [AnimStep] {
         match anim {
             AnimId::Rest => &REST_STEPS,
+            AnimId::Relax => &RELAX_STEPS,
             AnimId::Blink => &BLINK_STEPS,
             AnimId::Shuffle => &SHUFFLE_STEPS,
             AnimId::Stretch => &STRETCH_STEPS,
@@ -394,6 +452,7 @@ impl AnimationController {
             AnimId::Glare => &GLARE_STEPS,
             AnimId::Chase => &CHASE_STEPS,
             AnimId::Sleep => &SLEEP_STEPS,
+            AnimId::Eat => &EAT_STEPS,
         }
     }
 }
@@ -402,47 +461,78 @@ impl AnimationController {
 
 pub static REST_STEPS: [AnimStep; 1] = [AnimStep::new(0, 60000)];
 
-pub static BLINK_STEPS: [AnimStep; 3] = [
-    AnimStep { frame_idx: 0, duration_ms: 160, dy: 0, blink: true, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
-    AnimStep::new(0, 120),
-    AnimStep { frame_idx: 0, duration_ms: 140, dy: 0, blink: true, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
+/// 3-Phase Seated Posture:
+/// 1. Sinks down to floor (~440ms)
+/// 2. Front legs appear on floor; gentle breathing with happy ^^ and relaxed eyes (~8s)
+/// 3. Inverse stand-up sequence returning to upright resting idle (~440ms)
+pub static RELAX_STEPS: [AnimStep; 11] = [
+    // Phase 1: Going Down
+    AnimStep::new(0, 140).with_dy(2),
+    AnimStep::new(0, 140).with_dy(4),
+    AnimStep::new(0, 160).with_dy(5).with_sit_legs().with_happy_eyes(),
+
+    // Phase 2: Seated Breathing (~8.0 seconds total)
+    AnimStep::new(0, 2000).with_dy(5).with_sit_legs().with_happy_eyes(),
+    AnimStep::new(0, 1800).with_dy(4).with_sit_legs().with_half_eyes(),
+    AnimStep::new(0, 2200).with_dy(5).with_sit_legs().with_happy_eyes(),
+    AnimStep::new(0, 2000).with_dy(4).with_sit_legs().with_half_eyes(),
+
+    // Phase 3: Getting Up Inverse
+    AnimStep::new(0, 160).with_dy(5).with_sit_legs().with_happy_eyes(),
+    AnimStep::new(0, 140).with_dy(4),
+    AnimStep::new(0, 140).with_dy(2),
+    AnimStep::new(0, 250).with_dy(0),
 ];
 
-pub static SHUFFLE_STEPS: [AnimStep; 4] = [
+pub static BLINK_STEPS: [AnimStep; 4] = [
+    AnimStep::new(0, 160).with_blink(),
+    AnimStep::new(0, 120),
+    AnimStep::new(0, 140).with_blink(),
+    AnimStep::new(0, 500),
+];
+
+pub static SHUFFLE_STEPS: [AnimStep; 5] = [
     AnimStep::new(5, 260),
     AnimStep::new(6, 260),
     AnimStep::new(5, 260),
     AnimStep::new(0, 120),
+    AnimStep::new(0, 500),
 ];
 
-pub static STRETCH_STEPS: [AnimStep; 4] = [
+pub static STRETCH_STEPS: [AnimStep; 5] = [
     AnimStep::new(22, 260),
     AnimStep::new(23, 850),
     AnimStep::new(22, 220),
     AnimStep::new(0, 140),
+    AnimStep::new(0, 500),
 ];
 
-pub static PEEK_STEPS: [AnimStep; 4] = [
-    AnimStep::new(8, 500),
-    AnimStep::new(0, 150),
-    AnimStep::new(16, 500),
-    AnimStep::new(0, 120),
+/// Bilateral Peek: Visibly turns body and peeks LEFT, blinks, returns center, then turns and peeks RIGHT!
+pub static PEEK_STEPS: [AnimStep; 6] = [
+    AnimStep::new(0, 600).with_facing(-1).with_eyes(-2, 0),
+    AnimStep::new(0, 160).with_facing(-1).with_blink(),
+    AnimStep::new(0, 220).with_facing(1).with_eyes(0, 0),
+    AnimStep::new(0, 600).with_facing(1).with_eyes(2, 0),
+    AnimStep::new(0, 160).with_facing(1).with_blink(),
+    AnimStep::new(0, 300).with_eyes(0, 0),
 ];
 
-pub static LOOK_STEPS: [AnimStep; 4] = [
-    AnimStep { frame_idx: 0, duration_ms: 550, dy: 0, blink: false, squint: false, half_eyes: false, eyes_dx: -2, mark: None, zzz: None },
+pub static LOOK_STEPS: [AnimStep; 5] = [
+    AnimStep::new(0, 550).with_eyes(-2, 0),
     AnimStep::new(0, 200),
-    AnimStep { frame_idx: 0, duration_ms: 550, dy: 0, blink: false, squint: false, half_eyes: false, eyes_dx: 2, mark: None, zzz: None },
+    AnimStep::new(0, 550).with_eyes(2, 0),
     AnimStep::new(0, 150),
+    AnimStep::new(0, 500),
 ];
 
-pub static WAVE_STEPS: [AnimStep; 6] = [
+pub static WAVE_STEPS: [AnimStep; 7] = [
     AnimStep::new(20, 180),
     AnimStep::new(21, 180),
     AnimStep::new(20, 180),
     AnimStep::new(21, 180),
     AnimStep::new(20, 200),
     AnimStep::new(0, 120),
+    AnimStep::new(0, 500),
 ];
 
 pub static WALK_STEPS: [AnimStep; 15] = [
@@ -453,7 +543,10 @@ pub static WALK_STEPS: [AnimStep; 15] = [
     AnimStep::new(17, 70), AnimStep::new(18, 70), AnimStep::new(19, 70),
 ];
 
-pub static THINK_STEPS: [AnimStep; 1] = [AnimStep::new(26, 60000)];
+pub static THINK_STEPS: [AnimStep; 2] = [
+    AnimStep::new(0, 750).with_eyes(1, -1),
+    AnimStep::new(0, 750).with_eyes(-1, -1),
+];
 
 pub static WORK_STEPS: [AnimStep; 2] = [
     AnimStep::new(24, 130),
@@ -461,41 +554,42 @@ pub static WORK_STEPS: [AnimStep; 2] = [
 ];
 
 pub static ALERT_STEPS: [AnimStep; 2] = [
-    AnimStep { frame_idx: 27, duration_ms: 220, dy: 0, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: Some("!?"), zzz: None },
-    AnimStep { frame_idx: 28, duration_ms: 220, dy: 0, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: Some("!?"), zzz: None },
+    AnimStep::new(27, 220).with_mark("!?"),
+    AnimStep::new(28, 220).with_mark("!?"),
 ];
 
-pub static CELEBRATE_STEPS: [AnimStep; 4] = [
-    AnimStep { frame_idx: 0, duration_ms: 130, dy: -4, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
-    AnimStep::new(0, 130),
-    AnimStep { frame_idx: 5, duration_ms: 130, dy: -4, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
-    AnimStep::new(5, 130),
+pub static CELEBRATE_STEPS: [AnimStep; 5] = [
+    AnimStep::new(0, 140).with_dy(-5).with_happy_eyes(),
+    AnimStep::new(0, 120).with_dy(-2).with_happy_eyes(),
+    AnimStep::new(0, 140).with_dy(0).with_happy_eyes(),
+    AnimStep::new(0, 140).with_dy(-4).with_happy_eyes(),
+    AnimStep::new(0, 180).with_dy(0).with_happy_eyes(),
 ];
 
 pub static HOVER_STEPS: [AnimStep; 1] = [
-    AnimStep { frame_idx: 0, duration_ms: 60000, dy: 3, blink: false, squint: true, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
+    AnimStep::new(0, 60000).with_dy(2).with_happy_eyes(),
 ];
 
 pub static HOVER_WORK_STEPS: [AnimStep; 1] = [
-    AnimStep { frame_idx: 24, duration_ms: 60000, dy: 0, blink: false, squint: true, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
+    AnimStep::new(24, 60000).with_squint(),
 ];
 
 pub static HOVER_THINK_STEPS: [AnimStep; 1] = [
-    AnimStep { frame_idx: 26, duration_ms: 60000, dy: 0, blink: false, squint: true, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
+    AnimStep::new(0, 60000).with_squint(),
 ];
 
 pub static PET_WORK_STEPS: [AnimStep; 4] = [
-    AnimStep { frame_idx: 24, duration_ms: 140, dy: -3, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
+    AnimStep::new(24, 140).with_dy(-3).with_happy_eyes(),
     AnimStep::new(24, 140),
-    AnimStep { frame_idx: 24, duration_ms: 120, dy: -2, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
+    AnimStep::new(24, 120).with_dy(-2).with_happy_eyes(),
     AnimStep::new(24, 160),
 ];
 
 pub static PET_THINK_STEPS: [AnimStep; 4] = [
-    AnimStep { frame_idx: 26, duration_ms: 140, dy: -3, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
-    AnimStep::new(26, 140),
-    AnimStep { frame_idx: 26, duration_ms: 120, dy: -2, blink: false, squint: false, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
-    AnimStep::new(26, 160),
+    AnimStep::new(0, 140).with_dy(-3).with_happy_eyes(),
+    AnimStep::new(0, 140),
+    AnimStep::new(0, 120).with_dy(-2).with_happy_eyes(),
+    AnimStep::new(0, 160),
 ];
 
 pub static PANIC_STEPS: [AnimStep; 15] = [
@@ -507,28 +601,37 @@ pub static PANIC_STEPS: [AnimStep; 15] = [
 ];
 
 pub static GLARE_STEPS: [AnimStep; 1] = [
-    AnimStep { frame_idx: 0, duration_ms: 60000, dy: 0, blink: false, squint: true, half_eyes: false, eyes_dx: 0, mark: None, zzz: None },
+    AnimStep::new(0, 60000).with_squint(),
 ];
 
 pub static CHASE_STEPS: [AnimStep; 15] = [
-    AnimStep { frame_idx: 5, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 6, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 7, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 8, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 9, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 10, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 11, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 12, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 13, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 14, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 15, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 16, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 17, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 18, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
-    AnimStep { frame_idx: 19, duration_ms: 45, dy: 0, blink: false, squint: false, half_eyes: true, eyes_dx: 0, mark: Some("!"), zzz: None },
+    AnimStep::new(5, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(6, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(7, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(8, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(9, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(10, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(11, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(12, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(13, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(14, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(15, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(16, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(17, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(18, 45).with_half_eyes().with_mark("!"),
+    AnimStep::new(19, 45).with_half_eyes().with_mark("!"),
 ];
 
 pub static SLEEP_STEPS: [AnimStep; 2] = [
-    AnimStep { frame_idx: 0, duration_ms: 900, dy: 2, blink: false, squint: true, half_eyes: false, eyes_dx: 0, mark: None, zzz: Some(0) },
-    AnimStep { frame_idx: 0, duration_ms: 900, dy: 2, blink: false, squint: true, half_eyes: false, eyes_dx: 0, mark: None, zzz: Some(1) },
+    AnimStep::new(0, 900).with_dy(2).with_squint().with_zzz(0),
+    AnimStep::new(0, 900).with_dy(2).with_squint().with_zzz(1),
+];
+
+pub static EAT_STEPS: [AnimStep; 6] = [
+    AnimStep::new(0, 200).with_dy(2).with_happy_eyes().with_eyes(0, 1),
+    AnimStep::new(0, 200).with_dy(0).with_eyes(0, 1),
+    AnimStep::new(0, 200).with_dy(2).with_happy_eyes().with_eyes(0, 1),
+    AnimStep::new(0, 200).with_dy(0).with_eyes(0, 1),
+    AnimStep::new(0, 280).with_dy(-3).with_happy_eyes(),
+    AnimStep::new(0, 250).with_dy(0).with_happy_eyes(),
 ];

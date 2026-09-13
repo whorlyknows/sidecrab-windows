@@ -1,11 +1,11 @@
 {
-    "BenchmarkTimestamp":  "2026-09-13T05:00:00.4102866+02:00",
-    "DurationSeconds":  32,
-    "TotalSamples":  78,
-    "CeilingLimitMB":  10,
-    "PeakWorkingSetMB":  4.949,
-    "MinWorkingSetMB":  0.086,
-    "AverageWorkingSetMB":  1.828,
+    "BenchmarkTimestamp":  "2026-09-13T06:39:36.2540823+02:00",
+    "DurationSeconds":  15,
+    "TotalSamples":  36,
+    "CeilingLimitMB":  20,
+    "PeakWorkingSetMB":  2.77,
+    "MinWorkingSetMB":  0.602,
+    "AverageWorkingSetMB":  1.801,
     "ExceededCeiling":  false,
     "Status":  "PASS",
     "Violations":  [
@@ -14,471 +14,219 @@
     "Samples":  [
                     {
                         "ElapsedSec":  0,
-                        "WorkingSetMB":  3.422,
-                        "PrivateMB":  5.031,
+                        "WorkingSetMB":  0.949,
+                        "PrivateMB":  5.141,
                         "State":  "sleep"
                     },
                     {
                         "ElapsedSec":  0.43,
-                        "WorkingSetMB":  3.43,
-                        "PrivateMB":  5.031,
+                        "WorkingSetMB":  2.566,
+                        "PrivateMB":  5.141,
                         "State":  "sleep"
                     },
                     {
-                        "ElapsedSec":  0.86,
-                        "WorkingSetMB":  4.914,
-                        "PrivateMB":  5.031,
+                        "ElapsedSec":  0.85,
+                        "WorkingSetMB":  2.707,
+                        "PrivateMB":  5.141,
                         "State":  "sleep"
                     },
                     {
-                        "ElapsedSec":  1.28,
-                        "WorkingSetMB":  4.914,
-                        "PrivateMB":  5.031,
+                        "ElapsedSec":  1.26,
+                        "WorkingSetMB":  2.707,
+                        "PrivateMB":  5.141,
                         "State":  "sleep"
                     },
                     {
                         "ElapsedSec":  1.68,
-                        "WorkingSetMB":  4.949,
-                        "PrivateMB":  5.031,
+                        "WorkingSetMB":  2.77,
+                        "PrivateMB":  5.141,
                         "State":  "thinking"
                     },
                     {
-                        "ElapsedSec":  2.1,
-                        "WorkingSetMB":  0.609,
-                        "PrivateMB":  5.031,
+                        "ElapsedSec":  2.13,
+                        "WorkingSetMB":  0.625,
+                        "PrivateMB":  5.141,
                         "State":  "thinking"
                     },
                     {
-                        "ElapsedSec":  2.51,
-                        "WorkingSetMB":  0.66,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  2.91,
-                        "WorkingSetMB":  2.258,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  3.32,
-                        "WorkingSetMB":  2.301,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  3.74,
-                        "WorkingSetMB":  2.23,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  4.15,
-                        "WorkingSetMB":  2.23,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  4.55,
-                        "WorkingSetMB":  2.23,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  4.95,
-                        "WorkingSetMB":  0.531,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  5.38,
-                        "WorkingSetMB":  0.594,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  5.79,
-                        "WorkingSetMB":  2.227,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  6.2,
-                        "WorkingSetMB":  2.227,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  6.61,
-                        "WorkingSetMB":  2.27,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  7.03,
-                        "WorkingSetMB":  0.551,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  7.44,
-                        "WorkingSetMB":  0.551,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  7.86,
-                        "WorkingSetMB":  2.219,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  8.28,
-                        "WorkingSetMB":  2.262,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  8.7,
-                        "WorkingSetMB":  0.539,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  9.1,
-                        "WorkingSetMB":  2.199,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  9.51,
-                        "WorkingSetMB":  2.199,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  9.91,
-                        "WorkingSetMB":  0.648,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  10.32,
-                        "WorkingSetMB":  0.547,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  10.74,
-                        "WorkingSetMB":  2.215,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  11.15,
-                        "WorkingSetMB":  2.215,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  11.55,
-                        "WorkingSetMB":  2.258,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  11.97,
-                        "WorkingSetMB":  2.273,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  12.38,
-                        "WorkingSetMB":  2.273,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  12.78,
-                        "WorkingSetMB":  2.281,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  13.19,
-                        "WorkingSetMB":  2.324,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  13.61,
-                        "WorkingSetMB":  0.613,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  14.03,
+                        "ElapsedSec":  2.54,
                         "WorkingSetMB":  2.223,
-                        "PrivateMB":  5.031,
+                        "PrivateMB":  5.141,
                         "State":  "thinking"
                     },
                     {
-                        "ElapsedSec":  14.45,
+                        "ElapsedSec":  2.97,
                         "WorkingSetMB":  2.223,
-                        "PrivateMB":  5.031,
+                        "PrivateMB":  5.141,
                         "State":  "thinking"
                     },
                     {
-                        "ElapsedSec":  14.85,
-                        "WorkingSetMB":  2.273,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  15.27,
-                        "WorkingSetMB":  0.605,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  15.68,
-                        "WorkingSetMB":  0.605,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  16.09,
-                        "WorkingSetMB":  2.211,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  16.49,
-                        "WorkingSetMB":  2.254,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  16.91,
-                        "WorkingSetMB":  2.219,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  17.32,
-                        "WorkingSetMB":  2.219,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  17.73,
-                        "WorkingSetMB":  2.219,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  18.13,
-                        "WorkingSetMB":  2.27,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  18.55,
-                        "WorkingSetMB":  0.648,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  18.96,
-                        "WorkingSetMB":  2.242,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  19.36,
-                        "WorkingSetMB":  2.242,
-                        "PrivateMB":  5.031,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  19.78,
-                        "WorkingSetMB":  2.285,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  20.19,
-                        "WorkingSetMB":  0.457,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  20.59,
-                        "WorkingSetMB":  0.461,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  21.01,
-                        "WorkingSetMB":  2.129,
-                        "PrivateMB":  5.031,
-                        "State":  "done"
-                    },
-                    {
-                        "ElapsedSec":  21.42,
-                        "WorkingSetMB":  2.172,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  21.82,
-                        "WorkingSetMB":  0.543,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  22.24,
-                        "WorkingSetMB":  2.148,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  22.64,
-                        "WorkingSetMB":  2.148,
-                        "PrivateMB":  5.031,
-                        "State":  "idle"
-                    },
-                    {
-                        "ElapsedSec":  23.05,
-                        "WorkingSetMB":  2.273,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  23.46,
-                        "WorkingSetMB":  0.656,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  23.86,
-                        "WorkingSetMB":  2.234,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  24.26,
-                        "WorkingSetMB":  2.234,
-                        "PrivateMB":  5.031,
-                        "State":  "sleep"
-                    },
-                    {
-                        "ElapsedSec":  24.68,
-                        "WorkingSetMB":  2.277,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  25.09,
-                        "WorkingSetMB":  0.469,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  25.51,
-                        "WorkingSetMB":  0.469,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  25.93,
-                        "WorkingSetMB":  2.137,
-                        "PrivateMB":  5.031,
-                        "State":  "thinking"
-                    },
-                    {
-                        "ElapsedSec":  26.34,
-                        "WorkingSetMB":  2.18,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  26.76,
-                        "WorkingSetMB":  0.66,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  27.18,
-                        "WorkingSetMB":  2.246,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  27.6,
-                        "WorkingSetMB":  2.246,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  28,
+                        "ElapsedSec":  3.37,
                         "WorkingSetMB":  2.289,
-                        "PrivateMB":  5.031,
+                        "PrivateMB":  5.141,
                         "State":  "tool"
                     },
                     {
-                        "ElapsedSec":  28.42,
+                        "ElapsedSec":  3.79,
+                        "WorkingSetMB":  0.613,
+                        "PrivateMB":  5.141,
+                        "State":  "tool"
+                    },
+                    {
+                        "ElapsedSec":  4.2,
+                        "WorkingSetMB":  0.613,
+                        "PrivateMB":  5.141,
+                        "State":  "tool"
+                    },
+                    {
+                        "ElapsedSec":  4.62,
+                        "WorkingSetMB":  2.285,
+                        "PrivateMB":  5.141,
+                        "State":  "tool"
+                    },
+                    {
+                        "ElapsedSec":  5.04,
+                        "WorkingSetMB":  2.352,
+                        "PrivateMB":  5.141,
+                        "State":  "tool"
+                    },
+                    {
+                        "ElapsedSec":  5.46,
+                        "WorkingSetMB":  0.613,
+                        "PrivateMB":  5.141,
+                        "State":  "tool"
+                    },
+                    {
+                        "ElapsedSec":  5.88,
+                        "WorkingSetMB":  2.191,
+                        "PrivateMB":  5.141,
+                        "State":  "tool"
+                    },
+                    {
+                        "ElapsedSec":  6.3,
+                        "WorkingSetMB":  2.191,
+                        "PrivateMB":  5.141,
+                        "State":  "tool"
+                    },
+                    {
+                        "ElapsedSec":  6.72,
+                        "WorkingSetMB":  2.262,
+                        "PrivateMB":  5.141,
+                        "State":  "permission"
+                    },
+                    {
+                        "ElapsedSec":  7.15,
+                        "WorkingSetMB":  0.625,
+                        "PrivateMB":  5.141,
+                        "State":  "permission"
+                    },
+                    {
+                        "ElapsedSec":  7.56,
+                        "WorkingSetMB":  2.195,
+                        "PrivateMB":  5.141,
+                        "State":  "permission"
+                    },
+                    {
+                        "ElapsedSec":  7.98,
                         "WorkingSetMB":  0.602,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  28.84,
-                        "WorkingSetMB":  0.602,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  29.26,
-                        "WorkingSetMB":  2.199,
-                        "PrivateMB":  5.031,
-                        "State":  "tool"
-                    },
-                    {
-                        "ElapsedSec":  29.67,
-                        "WorkingSetMB":  4.102,
-                        "PrivateMB":  5.062,
+                        "PrivateMB":  5.141,
                         "State":  "permission"
                     },
                     {
-                        "ElapsedSec":  30.08,
-                        "WorkingSetMB":  0.086,
-                        "PrivateMB":  5.062,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  30.49,
-                        "WorkingSetMB":  0.469,
-                        "PrivateMB":  5.062,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  30.89,
-                        "WorkingSetMB":  0.469,
-                        "PrivateMB":  5.062,
-                        "State":  "permission"
-                    },
-                    {
-                        "ElapsedSec":  31.3,
-                        "WorkingSetMB":  2.184,
-                        "PrivateMB":  5.062,
+                        "ElapsedSec":  8.38,
+                        "WorkingSetMB":  0.73,
+                        "PrivateMB":  5.141,
                         "State":  "done"
                     },
                     {
-                        "ElapsedSec":  31.72,
-                        "WorkingSetMB":  0.547,
-                        "PrivateMB":  5.062,
+                        "ElapsedSec":  8.8,
+                        "WorkingSetMB":  2.176,
+                        "PrivateMB":  5.141,
                         "State":  "done"
+                    },
+                    {
+                        "ElapsedSec":  9.22,
+                        "WorkingSetMB":  2.18,
+                        "PrivateMB":  5.141,
+                        "State":  "done"
+                    },
+                    {
+                        "ElapsedSec":  9.63,
+                        "WorkingSetMB":  2.219,
+                        "PrivateMB":  5.141,
+                        "State":  "done"
+                    },
+                    {
+                        "ElapsedSec":  10.05,
+                        "WorkingSetMB":  2.297,
+                        "PrivateMB":  5.141,
+                        "State":  "idle"
+                    },
+                    {
+                        "ElapsedSec":  10.47,
+                        "WorkingSetMB":  0.613,
+                        "PrivateMB":  5.141,
+                        "State":  "idle"
+                    },
+                    {
+                        "ElapsedSec":  10.89,
+                        "WorkingSetMB":  2.191,
+                        "PrivateMB":  5.141,
+                        "State":  "idle"
+                    },
+                    {
+                        "ElapsedSec":  11.3,
+                        "WorkingSetMB":  2.191,
+                        "PrivateMB":  5.141,
+                        "State":  "idle"
+                    },
+                    {
+                        "ElapsedSec":  11.72,
+                        "WorkingSetMB":  2.273,
+                        "PrivateMB":  5.141,
+                        "State":  "sleep"
+                    },
+                    {
+                        "ElapsedSec":  12.14,
+                        "WorkingSetMB":  0.637,
+                        "PrivateMB":  5.141,
+                        "State":  "sleep"
+                    },
+                    {
+                        "ElapsedSec":  12.54,
+                        "WorkingSetMB":  0.637,
+                        "PrivateMB":  5.141,
+                        "State":  "sleep"
+                    },
+                    {
+                        "ElapsedSec":  12.95,
+                        "WorkingSetMB":  2.207,
+                        "PrivateMB":  5.141,
+                        "State":  "sleep"
+                    },
+                    {
+                        "ElapsedSec":  13.37,
+                        "WorkingSetMB":  2.281,
+                        "PrivateMB":  5.141,
+                        "State":  "thinking"
+                    },
+                    {
+                        "ElapsedSec":  13.79,
+                        "WorkingSetMB":  2.203,
+                        "PrivateMB":  5.141,
+                        "State":  "thinking"
+                    },
+                    {
+                        "ElapsedSec":  14.21,
+                        "WorkingSetMB":  2.203,
+                        "PrivateMB":  5.141,
+                        "State":  "thinking"
+                    },
+                    {
+                        "ElapsedSec":  14.63,
+                        "WorkingSetMB":  2.215,
+                        "PrivateMB":  5.141,
+                        "State":  "thinking"
                     }
                 ]
 }

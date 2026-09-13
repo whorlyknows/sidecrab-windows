@@ -26,6 +26,7 @@ pub const IDM_HOOKS_REMOVE: usize = 404;
 pub const IDM_WANDER_NOW: usize = 405;
 pub const IDM_RESET_STATE: usize = 406;
 pub const IDM_FLIGHT_EASTER_EGG: usize = 407;
+pub const IDM_DROP_SNACK: usize = 408;
 
 pub const IDM_TEST_REST: usize = 501;
 pub const IDM_TEST_THINK: usize = 502;
@@ -43,6 +44,7 @@ pub const IDM_TEST_SLEEP: usize = 513;
 pub const IDM_TEST_PANIC: usize = 514;
 pub const IDM_TEST_GLARE: usize = 515;
 pub const IDM_TEST_CHASE: usize = 516;
+pub const IDM_TEST_RELAX: usize = 517;
 pub const IDM_TEST_RESET: usize = 599;
 
 pub const IDM_EXIT: usize = 499;
@@ -103,6 +105,7 @@ pub unsafe fn show_context_menu(
 
     // Test Animations Submenu
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_REST, wide_str("▶ Idle / Rest Pose").as_ptr());
+    AppendMenuW(test_menu, MF_STRING, IDM_TEST_RELAX, wide_str("▶ Sit & Relax (Legs Out, 8s Inverse)").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_THINK, wide_str("▶ Thinking (Thought Bubble)").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_WORK, wide_str("▶ Working (Laptop Typing)").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_ALERT, wide_str("▶ Alert (Double Claw Wave)").as_ptr());
@@ -111,11 +114,11 @@ pub unsafe fn show_context_menu(
     AppendMenuW(test_menu, MF_SEPARATOR, 0, null());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_STRETCH, wide_str("Morning Stretch").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_BLINK, wide_str("Blink").as_ptr());
-    AppendMenuW(test_menu, MF_STRING, IDM_TEST_PEEK, wide_str("Peek Left/Right").as_ptr());
+    AppendMenuW(test_menu, MF_STRING, IDM_TEST_PEEK, wide_str("▶ Peek Left & Right (True Turn)").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_LOOK, wide_str("Look Around").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_WAVE, wide_str("Wave").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_SHUFFLE, wide_str("Shuffle").as_ptr());
-    AppendMenuW(test_menu, MF_STRING, IDM_TEST_SLEEP, wide_str("Sleep (Nap)").as_ptr());
+    AppendMenuW(test_menu, MF_STRING, IDM_TEST_SLEEP, wide_str("Sleep (Deep zZz)").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_PANIC, wide_str("Panic (Held/Carried)").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_GLARE, wide_str("Glare").as_ptr());
     AppendMenuW(test_menu, MF_STRING, IDM_TEST_CHASE, wide_str("Chase Cursor").as_ptr());
@@ -125,7 +128,8 @@ pub unsafe fn show_context_menu(
 
     // Interactive & Physics Actions
     AppendMenuW(menu, MF_SEPARATOR, 0, null());
-    AppendMenuW(menu, MF_STRING, IDM_FLIGHT_EASTER_EGG, wide_str("🚀 Fly & Bounce (VS Code Pet Mode)").as_ptr());
+    AppendMenuW(menu, MF_STRING, IDM_DROP_SNACK, wide_str("🍰 Drop Snack Treat").as_ptr());
+    AppendMenuW(menu, MF_STRING, IDM_FLIGHT_EASTER_EGG, wide_str("🚀 Fly & Bounce").as_ptr());
     AppendMenuW(menu, MF_STRING, IDM_WANDER_NOW, wide_str("🐾 Take a Walk Now").as_ptr());
     AppendMenuW(menu, MF_STRING, IDM_RESET_STATE, wide_str("🔄 Reset State to Idle").as_ptr());
 

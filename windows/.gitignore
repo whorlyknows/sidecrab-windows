@@ -1,72 +1,62 @@
-# ==============================================================================
-# Rust / Cargo Build Artifacts
-# ==============================================================================
-target/
+# Rust and Cargo output
+/target/
 **/target/
-**/*.rs.bk
+*.rs.bk
 *.pdb
+*.dSYM/
+
+# Local application state, credentials, and agent/session output
+.sidecrab/
+**/.sidecrab/
+.agents/
+**/.agents/
+.claude/
+**/.claude/
+.gemini/
+.antigravity/
+scratch/
+sessions.d/
+state.json
+config.json
+.env
+.env.*
+!.env.example
+*.tmp
+*.bak
+
+# Test, benchmark, coverage, and diagnostic output
+tests/*_report.json
+*.log
+*.profraw
+*.dmp
+coverage/
+
+# Native build output and installers
 *.exe
 *.dll
 *.lib
-# Optional: keep Cargo.lock if this is an application/binary repo,
-# or uncomment the line below if you prefer not to track dependency locks:
-# Cargo.lock
-# ==============================================================================
-# Sidecrab / Claude Code Local State & User Configs
-# ==============================================================================
-# Never commit local session tokens, state, or user positions
-.sidecrab/
-**/.sidecrab/
-state.json
-config.json
-*.tmp
-*.bak
-sessions.d/
-# Claude local CLI settings & history
-.claude/
-**/.claude/
-# ==============================================================================
-# Test & Benchmark Output Reports
-# ==============================================================================
-tests/ram_benchmark_report.json
-tests/cpu_benchmark_report.json
-*.log
-# ==============================================================================
-# Large Media & Video Screen Recordings
-# ==============================================================================
+*.msi
+
+# IDE and editor state
+.vscode/
+.idea/
+*.iml
+*.suo
+*.user
+*.userosct
+*.sln.docstates
+cmake-build-*/
+
+# OS and media files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
 *.mp4
 *.mkv
 *.mov
 *.avi
 *.wmv
-# ==============================================================================
-# Windows Operating System Files
-# ==============================================================================
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-Desktop.ini
-$RECYCLE.BIN/
-*.lnk
-# ==============================================================================
-# IDEs, Editors & Tooling
-# ==============================================================================
-# Visual Studio / Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-*.suo
-*.user
-*.userosct
-*.sln.docstates
-# JetBrains (CLion / RustRover)
-.idea/
-*.iml
-cmake-build-*/
-# Antigravity / AI Agent Artifacts & Scratch directories
-.gemini/
-.antigravity/
-scratch/
+
+# Keep Cargo.lock: this repository builds applications and binaries.
